@@ -1,0 +1,4 @@
+protobuf
+paho-mqtt
+python-dotenv
+mcp[cli]
