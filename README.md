@@ -1,8 +1,20 @@
 
 
-Need to install the protobuf.
-```shell
-brew install protobuf
+
+## Setup workspace
+
+Follow the steps below to set up and run the application:
+
+1. Clone the Repository
+```bash
+git clone https://github.com/emqx/spb_demo/
+cd spb_demo
+```
+
+2. Create a Virtual Environment
+```bash
+python3 -m venv venv
+source venv/bin/activate
 ```
 
 ## Setup the database
@@ -74,7 +86,43 @@ CREATE TABLE boolean_tags (
   with (ttl='10d');  
 ```
 
-## Command
+## EMQX Enterprise 5.6.x
+Install EMQX Enterprise 5.6.x and start it.
+
+## NeuronEX
+Install NeuronEX and create related devices. 
+
+- You can create the device and tag configurations as in below.
+
+test
+├── group1
+│   └── t1
+└── group2
+    ├── voltage
+    └── amper
+
+- Create a Sparkplug north application to report the data to EMQX.
+  - Group name is `factory_1` 
+  - Node name is `assembly_1`
+
+## Usage
+Create `.env` file under the root directory, and specify the following values.
+
+```
+MQTT_BROKER=127.0.0.1
+MQTT_PORT=1883
+MQTT_TOPIC=spBv1.0/#
+
+DB_HOST=127.0.0.1
+DB_PORT=8361
+DB_TOKEN=YWRtaW46cHVibGlj
+```
+
+## Run the application
+
+Run the `spb_app.py` to collect the data and save it into the database.
+
+## Demo scenario
 ### 查询过去一周节点 assembly_1 的离线情况
 
 好的,我将用中文为您总结 factory_1 组下节点 assembly_1 的过去一周工作情况。让我继续分析已获取的数据。
@@ -153,7 +201,7 @@ test (设备)
     ├── voltage (浮点值: 4.6)
     └── amper (双精度值: 3.14)
 ```
-### 总结一下 factory_1 组下节点名称为 assembly_1 下的 test 设备点位 group2/voltage 的工作情况
+### 总结一下过去一周 factory_1 组下节点名称为 assembly_1 下的 test 设备点位 group2/voltage 的工作情况
 
 I'll help you analyze the working condition of the voltage tag under the specified device path. Let me break this down into steps:
 

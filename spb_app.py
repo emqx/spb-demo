@@ -34,7 +34,7 @@ async def get_node_death(sql:str) -> str:
     '''
     The tool is used for fetching the node death status from 'demo.booleantag' table with specified SQL statement. The SQL sample is as following,
     SELECT * FROM demo.boolean_tags WHERE device_key="spBv1.0/{group_id}/NDEATH/{edge_node_id}"
-    As in above SQL sample, user must supply the {group_id}, {edge_node_id} and {device_id} before querying the data.
+    As in above SQL sample, user must supply the {group_id} and {edge_node_id} before querying the data.
     
     There are 4 columns in the table 'demo.booleantag',
     - ts(timestamp): The timestamp value for node death event (known as "NDEATH")
@@ -43,6 +43,22 @@ async def get_node_death(sql:str) -> str:
       - {edge_node_id}: The edge_node_id element of the Sparkplug topic namespace uniquely identifies the Sparkplug EdgeNode within the infrastructure.
     - tag_name(string): The metric name for NDEATH
     - tag_value(boolean): The metric value for NDEATH
+
+    Below are some of instructions for writing the date and time related WHERE clause.
+    
+    When you want to fetch history data from database, such as last 7 days, you don't need to use “single quotation mark”。 Below is the wrong SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL '7 day'
+    ```
+    The correct SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL 7 day
+    ```
+    - INTERVAL 为形如'2 hour' 的字符串，可用精度单位：'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
+    - PRECISION 为形如 'hour' 的字符串，可用精度单位：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second'
+    - PART 为形如 'minute' 字符串，可用部分：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'dow', 'doy', 'epoch'
+    - FIELD 为形如 minute 的标识符，不同于 PART 是不需要引号的
+    - YEAR, MONTH, DAY 既可以是整数类型，也可以是整数类型的字符串形式
 
     Returns the result of the SQL query as a string. The SQL query is expected to fetch the node death status from the 'demo.booleantag' table. 
     '''
@@ -62,6 +78,22 @@ async def get_node_birth(sql:str) -> str:
       - {edge_node_id}: The edge_node_id element of the Sparkplug topic namespace uniquely identifies the Sparkplug EdgeNode within the infrastructure.
     - tag_name(string): The metric name for NBIRTH
     - tag_value(boolean): The metric value for NBIRTH
+
+    Below are some of instructions for writing the date and time related WHERE clause.
+    
+    When you want to fetch history data from database, such as last 7 days, you don't need to use “single quotation mark”。 Below is the wrong SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL '7 day'
+    ```
+    The correct SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL 7 day
+    ```
+    - INTERVAL 为形如'2 hour' 的字符串，可用精度单位：'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
+    - PRECISION 为形如 'hour' 的字符串，可用精度单位：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second'
+    - PART 为形如 'minute' 字符串，可用部分：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'dow', 'doy', 'epoch'
+    - FIELD 为形如 minute 的标识符，不同于 PART 是不需要引号的
+    - YEAR, MONTH, DAY 既可以是整数类型，也可以是整数类型的字符串形式
 
     Returns the result of the SQL query as a string. The SQL query is expected to fetch the node birth status from the 'demo.booleantag' table. 
     '''
@@ -83,6 +115,22 @@ async def get_device_birth(sql:str) -> str:
     - tag_name(string): The metric name for DBIRTH
     - tag_value(boolean): The metric value for DBIRTH
 
+    Below are some of instructions for writing the date and time related WHERE clause.
+    
+    When you want to fetch history data from database, such as last 7 days, you don't need to use “single quotation mark”。 Below is the wrong SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL '7 day'
+    ```
+    The correct SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL 7 day
+    ```
+    - INTERVAL 为形如'2 hour' 的字符串，可用精度单位：'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
+    - PRECISION 为形如 'hour' 的字符串，可用精度单位：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second'
+    - PART 为形如 'minute' 字符串，可用部分：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'dow', 'doy', 'epoch'
+    - FIELD 为形如 minute 的标识符，不同于 PART 是不需要引号的
+    - YEAR, MONTH, DAY 既可以是整数类型，也可以是整数类型的字符串形式
+
     Returns the result of the SQL query as a string. The SQL query is expected to fetch the device birth status from the 'demo.booleantag' table. 
     '''
     return query(sql)
@@ -101,7 +149,22 @@ async def get_device_history_data(sqls:list[str]) -> str:
     SELECT * FROM demo.double_tags WHERE device_key="spBv1.0/{group_id}/DDATA/{edge_node_id}/{device_id}" AND tag_name="{tag_name}"
     As in above SQL samples, user must supply the right {group_id}, {edge_node_id}, {device_id} and {tag_name} before querying the data.
     - If you don't know the above variables, you need either let user to specify one or use fuzzy query for the SQL (e.g use LIKE statement).
-    The SQL conditions (in WHERE clause) for the 3 tables should be the same.
+    The SQL conditions (in WHERE clause) for the 3 tables should be the same. Below are some of instructions for writing the date and time related WHERE clause.
+    
+    When you want to fetch history data from database, such as last 7 days, you don't need to use “single quotation mark”。 Below is the wrong SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL '7 day'
+    ```
+    The correct SQL statement,
+    ```sql
+    SELECT * FROM demo.float_tags WHERE device_key='spBv1.0/factory_1/DDATA/assembly_1/test' AND tag_name='group2/voltage' AND ts > NOW() - INTERVAL 7 day
+    ```
+    - INTERVAL 为形如'2 hour' 的字符串，可用精度单位：'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
+    - PRECISION 为形如 'hour' 的字符串，可用精度单位：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second'
+    - PART 为形如 'minute' 字符串，可用部分：'year', 'quarter', 'month', 'week', 'day', 'hour', 'minute', 'second', 'millisecond', 'microsecond', 'nanosecond', 'dow', 'doy', 'epoch'
+    - FIELD 为形如 minute 的标识符，不同于 PART 是不需要引号的
+    - YEAR, MONTH, DAY 既可以是整数类型，也可以是整数类型的字符串形式
+    
     
     There are 4 columns in 'demo.int_tags', 'demo.float_tags' and 'demo.double_tags' tables,
     - ts(timestamp): The timestamp value for tag value report event (known as "DDATA")
