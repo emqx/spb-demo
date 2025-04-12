@@ -94,12 +94,14 @@ Install NeuronEX and create related devices.
 
 - You can create the device and tag configurations as in below.
 
+```
 test
 ├── group1
 │   └── t1
 └── group2
     ├── voltage
     └── amper
+```
 
 - Create a Sparkplug north application to report the data to EMQX.
   - Group name is `factory_1` 
