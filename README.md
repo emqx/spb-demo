@@ -123,7 +123,7 @@ DB_TOKEN=YWRtaW46cHVibGlj
 Run the `spb_app.py` to collect the data and save it into the database.
 
 ## Demo scenario
-### 查询过去一周节点 assembly_1 的离线情况
+### 查询过去一周节点 assembly_1 的离线情况 (Query the offline status of assembly_1 of last week.)
 
 好的,我将用中文为您总结 factory_1 组下节点 assembly_1 的过去一周工作情况。让我继续分析已获取的数据。
 
@@ -178,7 +178,7 @@ Run the `spb_app.py` to collect the data and save it into the database.
 等等，我都可以为您进一步查询和分析。
 
 
-### 请列出设备 test 的树形结构
+### 请列出设备 test 的树形结构 (List the tree structure of device named "test".)
 ```
 test (设备)
 ├── Device Control
@@ -201,7 +201,7 @@ test (设备)
     ├── voltage (浮点值: 4.6)
     └── amper (双精度值: 3.14)
 ```
-### 总结一下过去一周 factory_1 组下节点名称为 assembly_1 下的 test 设备点位 group2/voltage 的工作情况
+### 总结一下过去一周 factory_1 组下节点名称为 assembly_1 下的 test 设备点位 group2/voltage 的工作情况 (Summarize the last week status of tag points "group2/voltage", which is under device named "test" of assembly_1 edge node locates in factory_1.)
 
 I'll help you analyze the working condition of the voltage tag under the specified device path. Let me break this down into steps:
 

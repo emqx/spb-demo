@@ -2,3 +2,6 @@ protobuf
 paho-mqtt
 python-dotenv
 mcp[cli]
+mcp-server
+openai
+mcp
