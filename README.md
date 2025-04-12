@@ -83,7 +83,29 @@ CREATE TABLE boolean_tags (
   timestamp KEY (ts))
   PARTITION BY HASH(device_key) PARTITIONS 8
   ENGINE=TimeSeries
-  with (ttl='10d');  
+  with (ttl='10d');
+```
+
+## MariaDB
+Refer to https://mariadb.com/resources/blog/get-started-with-mariadb-using-docker-in-3-steps/ for setting up the database.
+
+Create a table in MariaDB to store the OT & IT mapping. For example, we have a telemetry data reported from `factory_1`, which is an identifier from OT pespective. Normally, for example, people would call the `factory_1` as `LA factory`, which means the factory locates in Los Angeles.
+
+```sql
+CREATE DATABASE sample;
+USE sample;
+CREATE TABLE ot_it_mapping (
+    ot_id VARCHAR(50) PRIMARY KEY,
+    it_alias VARCHAR(100) NOT NULL
+);
+
+-- Insert the example data
+INSERT INTO ot_it_mapping (ot_id, it_alias) 
+VALUES ('factory_1', 'LA factory');  
+INSERT INTO ot_it_mapping (ot_id, it_alias) 
+VALUES ('assembly_1', 'Big boy');  
+INSERT INTO ot_it_mapping (ot_id, it_alias) 
+VALUES ('test', 'Bee');  
 ```
 
 ## EMQX Enterprise 5.6.x

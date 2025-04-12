@@ -11,6 +11,10 @@ mcp_client_config = config.MCPClientConfig(
         "demo_server": config.MCPServerConfig(
             command="/Users/rocky/Downloads/workspace/spb_demo/venv/bin/python",
             args=["/Users/rocky/Downloads/workspace/spb_demo/spb_app.py"],
+        ),
+        "mapping_server": config.MCPServerConfig(
+            command="/Users/rocky/Downloads/workspace/spb_demo/venv/bin/python",
+            args=["/Users/rocky/Downloads/workspace/spb_demo/biz_app.py"],
         )
         # add here other servers ...
     }
@@ -43,6 +47,7 @@ async def get_client():
 async def main():
     async with get_client() as client:
         await client.connect_to_server("demo_server")
+        await client.connect_to_server("mapping_server")
 
         messages = [
             {
@@ -51,7 +56,7 @@ async def main():
                     "Leverage the available tools to complete the task."
                 ),
             },
-            {"role": "user", "content": "请列出设备 test 的树形结构 "},
+            {"role": "user", "content":'"Query the offline status of  "Big boy" of last week.'},
         ]
         
         messages = await client.process_messages(messages)

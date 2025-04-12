@@ -5,3 +5,4 @@ mcp[cli]
 mcp-server
 openai
 mcp
+mysql-connector-python

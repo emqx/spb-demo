@@ -7,6 +7,7 @@ from .config import (
 )
 
 from .db_util import schedule_insert_db, query
+from .mariadb_util import get_ot_id_by_alias
 
 __all__ = ['schedule_insert_db', 
            'query', 
@@ -15,4 +16,5 @@ __all__ = ['schedule_insert_db',
            'MCPServerConfig',
            'LLMRequestConfig',
            'LLMClientConfig',
+           'get_ot_id_by_alias',
            ]

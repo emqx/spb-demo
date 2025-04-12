@@ -2,7 +2,8 @@ import asyncio
 import json
 from contextlib import AsyncExitStack
 from dataclasses import asdict
-from typing import Optional
+from dataclasses import dataclass
+from typing import Dict, List, Optional
 
 from dotenv import load_dotenv
 from mcp import ClientSession, StdioServerParameters
@@ -22,6 +23,45 @@ from .config import LLMClientConfig, LLMRequestConfig, MCPClientConfig
 
 load_dotenv()
 
+@dataclass
+class MCPServer:
+    srv_name: str
+    session: ClientSession
+
+    async def tool_existed(self, name: str) -> bool:
+        response = await self.session.list_tools()
+        return any(tool.name == name for tool in response.tools)
+
+class MCPServers:
+    servers: List[MCPServer] = []
+    
+    def add_mcp_server(self, name:str, session: ClientSession):
+        server = MCPServer(srv_name=name, session=session)
+        self.servers.append(server)
+
+    async def get_tool_list(self) -> List[ChatCompletionToolParam]:
+        all_tools = []
+        for server in self.servers:
+            tools = [
+                ChatCompletionToolParam(
+                    type="function",
+                    function=FunctionDefinition(
+                        name=tool.name,
+                        description=tool.description if tool.description else "",
+                        parameters=tool.inputSchema,
+                    ),
+                )
+                for tool in (await server.session.list_tools()).tools
+            ]
+            all_tools.extend(tools)
+        return all_tools
+
+    async def find_tool(self, tool_name: str) -> List[MCPServer]:
+        found_servers = []
+        for server in self.servers:
+            if await server.tool_existed(tool_name):
+                found_servers.append(server)
+        return found_servers
 
 class MCPClient:
     def __init__(
@@ -34,10 +74,9 @@ class MCPClient:
         self.llm_client_config = llm_client_config
         self.llm_request_config = llm_request_config
         self.llm_client = AsyncOpenAI(**asdict(self.llm_client_config))
-        self.session: Optional[ClientSession] = None
+        # self.server_sessions = MCPClient()
+        self.mcp_servers = MCPServers()
         self.exit_stack = AsyncExitStack()
-        self.current_server = None
-
         print("CLIENT CREATED")
 
     async def connect_to_server(self, server_name: str):
@@ -58,17 +97,15 @@ class MCPClient:
             stdio_client(stdio_server_params)
         )
         self.stdio, self.write = stdio_transport
-        self.session = await self.exit_stack.enter_async_context(
+        session = await self.exit_stack.enter_async_context(
             ClientSession(self.stdio, self.write)
         )
-
-        await self.session.initialize()  # type: ignore
-        self.current_server = server_name
-
+        await session.initialize()  # type: ignore
         # List available tools
-        response = await self.session.list_tools()  # type: ignore
+        response = await session.list_tools()  # type: ignore
         print(f"CLIENT CONNECT to {server_name}")
         print("AVAILABLE TOOLS", [tool.name for tool in response.tools])
+        self.mcp_servers.add_mcp_server(server_name, session)
 
     async def process_tool_call(self, tool_call) -> ChatCompletionToolMessageParam:
         match tool_call.type:
@@ -76,7 +113,14 @@ class MCPClient:
                 tool_name = tool_call.function.name
                 tool_args = json.loads(tool_call.function.arguments)
                 print(f"##############################{tool_call}: {tool_args}")
-                call_tool_result = await self.session.call_tool(tool_name, tool_args)  # type: ignore
+                
+                servers = await self.mcp_servers.find_tool(tool_name)
+                if len(servers) > 1:
+                    print(f"Multiple servers found with tool {tool_name}, using the first one")
+                elif len(servers) == 0:
+                    raise ValueError(f"Cannot find any server with tool {tool_name}")
+                selected_server = servers[0]
+                call_tool_result = await selected_server.session.call_tool(tool_name, tool_args)
 
                 if call_tool_result.isError:
                     raise ValueError("An error occurred while calling the tool.")
@@ -110,19 +154,9 @@ class MCPClient:
         llm_request_config: LLMRequestConfig | None = None,
     ) -> list[ChatCompletionMessageParam]:
         # Set up tools and LLM request config
-        if not self.session:
-            raise RuntimeError("Not connected to any server")
-        tools = [
-            ChatCompletionToolParam(
-                type="function",
-                function=FunctionDefinition(
-                    name=tool.name,
-                    description=tool.description if tool.description else "",
-                    parameters=tool.inputSchema,
-                ),
-            )
-            for tool in (await self.session.list_tools()).tools
-        ]
+        if not self.mcp_servers.servers or len(self.mcp_servers.servers) == 0:
+            raise RuntimeError("No servers connected")
+        tools = await self.mcp_servers.get_tool_list()
         llm_request_config = LLMRequestConfig(
             **{
                 **asdict(self.llm_request_config),
