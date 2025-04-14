@@ -131,7 +131,7 @@ VALUES ('test', 'Bee');
 
 ## Install PostGres vectordb
 
-Refer to https://medium.com/@adarsh.ajay/setting-up-postgresql-with-pgvector-in-docker-a-step-by-step-guide-d4203f6456bd for detailed instruction.
+Refer to [doc](https://medium.com/@adarsh.ajay/setting-up-postgresql-with-pgvector-in-docker-a-step-by-step-guide-d4203f6456bd) for detailed instruction.
 
 ```shell
 docker pull ankane/pgvector
