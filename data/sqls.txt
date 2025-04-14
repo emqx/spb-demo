@@ -1,0 +1,14 @@
+[
+	{
+	  "context": "CREATE TABLE sensor_info (ts TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, sn INT64 NOT NULL, speed DOUBLE, temperature REAL, TIMESTAMP KEY(ts)) PARTITION BY HASH(sn) PARTITIONS 6 ENGINE=TimeSeries WITH (ttl='7d', memtable_size='512MiB')",
+	  "question": "查询设备编号1最近7天的平均速度",
+	  "answer": "SELECT avg(speed) FROM sensor_info WHERE sn=1 AND ts > NOW() - interval 7 day"
+	},
+	{
+	  "context": "CREATE TABLE cpu_metrics (time TIMESTAMP(3) NOT NULL, device_id STRING, usage DOUBLE, TIMESTAMP KEY(time)) PARTITION BY HASH(device_id) PARTITIONS 4 ENGINE=TimeSeries WITH (ttl='30d')",
+	  "question": "获取CPU设备X-001在过去一小时内每5分钟的使用率最大值",
+	  "answer": "SELECT date_bin('5 minutes', time) as time_interval, max(usage) FROM cpu_metrics WHERE device_id='X-001' AND time > NOW() - interval 1 hour GROUP BY time_interval"
+	}
+]
+
+
