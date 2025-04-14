@@ -38,7 +38,7 @@ test
   - Group name is `factory_1` 
   - Node name is `assembly_1`
 
-## Setup the timeSeries database
+## Setup timeseries database
 
 - Pull Datalayers
 
@@ -121,12 +121,9 @@ CREATE TABLE ot_it_mapping (
 );
 
 -- Insert the example data
-INSERT INTO ot_it_mapping (ot_id, it_alias) 
-VALUES ('factory_1', 'LA factory');  
-INSERT INTO ot_it_mapping (ot_id, it_alias) 
-VALUES ('assembly_1', 'Big boy');  
-INSERT INTO ot_it_mapping (ot_id, it_alias) 
-VALUES ('test', 'Bee');  
+INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('factory_1', 'LA factory');  
+INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('assembly_1', 'Big boy');  
+INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('test', 'Bee');  
 ```
 
 ## Install PostGres vectordb
