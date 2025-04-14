@@ -17,7 +17,28 @@ python3 -m venv venv
 source venv/bin/activate
 ```
 
-## Setup the database
+## EMQX Enterprise 5.6.x
+Install EMQX Enterprise 5.6.x and start it.
+
+## NeuronEX
+Install NeuronEX and create related devices. 
+
+- You can create the device and tag configurations as in below.
+
+```
+test
+├── group1
+│   └── t1
+└── group2
+    ├── voltage
+    └── amper
+```
+
+- Create a Sparkplug north application to report the data to EMQX.
+  - Group name is `factory_1` 
+  - Node name is `assembly_1`
+
+## Setup the timeSeries database
 
 - Pull Datalayers
 
@@ -87,7 +108,7 @@ CREATE TABLE boolean_tags (
 ```
 
 ## MariaDB
-Refer to https://mariadb.com/resources/blog/get-started-with-mariadb-using-docker-in-3-steps/ for setting up the database.
+Refer to [doc](https://mariadb.com/resources/blog/get-started-with-mariadb-using-docker-in-3-steps/) for setting up the database.
 
 Create a table in MariaDB to store the OT & IT mapping. For example, we have a telemetry data reported from `factory_1`, which is an identifier from OT pespective. Normally, for example, people would call the `factory_1` as `LA factory`, which means the factory locates in Los Angeles.
 
@@ -108,28 +129,7 @@ INSERT INTO ot_it_mapping (ot_id, it_alias)
 VALUES ('test', 'Bee');  
 ```
 
-## EMQX Enterprise 5.6.x
-Install EMQX Enterprise 5.6.x and start it.
-
-## NeuronEX
-Install NeuronEX and create related devices. 
-
-- You can create the device and tag configurations as in below.
-
-```
-test
-├── group1
-│   └── t1
-└── group2
-    ├── voltage
-    └── amper
-```
-
-- Create a Sparkplug north application to report the data to EMQX.
-  - Group name is `factory_1` 
-  - Node name is `assembly_1`
-
-## Install Postgres vectordb
+## Install PostGres vectordb
 
 Refer to https://medium.com/@adarsh.ajay/setting-up-postgresql-with-pgvector-in-docker-a-step-by-step-guide-d4203f6456bd for detailed instruction.
 
@@ -143,40 +143,57 @@ docker run -e POSTGRES_USER=emqx \
            -p 5432:5432 \
            -d ankane/pgvector
 
+#In container
 psql -h localhost -U emqx -d mydatabase -p 5432
+
+#SQLs
+#List the tables
+\dt 
+            List of relations
+ Schema |      Name       | Type  | Owner
+--------+-----------------+-------+-------
+ public | data_test_table | table | emqx
+(1 row)
 ```
 
 ## Usage
 Create `.env` file under the root directory, and specify the following values.
 
 ```
-MQTT_BROKER=127.0.0.1
-MQTT_PORT=1883
-MQTT_TOPIC=spBv1.0/#
-
-DB_HOST=127.0.0.1
-DB_PORT=8361
-DB_TOKEN=YWRtaW46cHVibGlj
-
+#LLMs
 DS_API_KEY=
 DS_MODEL_NAME=deepseek-chat
 DS_API_BASE_URL=https://api.deepseek.com
-
-MARIADB_HOST=localhost
-MARIADB_DATABASE=sample
-MARIADB_USER=root
-MARIADB_PASSWORD=Password123!
 
 SF_API_KEY=
 MODEL_NAME=Pro/deepseek-ai/DeepSeek-V3
 # MODEL_NAME=Pro/deepseek-ai/DeepSeek-R1
 
-DS_API_KEY=
-DS_MODEL_NAME=deepseek-reasoner
+EMBEDDING_API_KEY=
+EMBEDDING_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
 
+#EMQX Broker
+MQTT_BROKER=127.0.0.1
+MQTT_PORT=1883
+MQTT_TOPIC=spBv1.0/#
+
+#MariaDB
+MARIADB_HOST=localhost
+MARIADB_DATABASE=sample
+MARIADB_USER=root
+MARIADB_PASSWORD=Password123!
+
+#Datalayers
+DB_HOST=127.0.0.1
+DB_PORT=8361
+DB_TOKEN=YWRtaW46cHVibGlj
+
+#PgSQL vector database
 PGSQL_CONN=postgresql://emqx:public@localhost:5432
 PGSQL_DB=mydatabase
 PGSQL_TABLE=test_table
+
+
 ```
 
 ## Run the application
