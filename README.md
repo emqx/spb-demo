@@ -129,6 +129,23 @@ test
   - Group name is `factory_1` 
   - Node name is `assembly_1`
 
+## Install Postgres vectordb
+
+Refer to https://medium.com/@adarsh.ajay/setting-up-postgresql-with-pgvector-in-docker-a-step-by-step-guide-d4203f6456bd for detailed instruction.
+
+```shell
+docker pull ankane/pgvector
+
+docker run -e POSTGRES_USER=emqx \
+           -e POSTGRES_PASSWORD=public \
+           -e POSTGRES_DB=mydatabase \
+           --name my_postgres \
+           -p 5432:5432 \
+           -d ankane/pgvector
+
+psql -h localhost -U emqx -d mydatabase -p 5432
+```
+
 ## Usage
 Create `.env` file under the root directory, and specify the following values.
 
@@ -140,6 +157,26 @@ MQTT_TOPIC=spBv1.0/#
 DB_HOST=127.0.0.1
 DB_PORT=8361
 DB_TOKEN=YWRtaW46cHVibGlj
+
+DS_API_KEY=
+DS_MODEL_NAME=deepseek-chat
+DS_API_BASE_URL=https://api.deepseek.com
+
+MARIADB_HOST=localhost
+MARIADB_DATABASE=sample
+MARIADB_USER=root
+MARIADB_PASSWORD=Password123!
+
+SF_API_KEY=
+MODEL_NAME=Pro/deepseek-ai/DeepSeek-V3
+# MODEL_NAME=Pro/deepseek-ai/DeepSeek-R1
+
+DS_API_KEY=
+DS_MODEL_NAME=deepseek-reasoner
+
+PGSQL_CONN=postgresql://emqx:public@localhost:5432
+PGSQL_DB=mydatabase
+PGSQL_TABLE=test_table
 ```
 
 ## Run the application

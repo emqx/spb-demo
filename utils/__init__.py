@@ -5,6 +5,7 @@ from .config import (
     LLMRequestConfig,
     LLMClientConfig,
 )
+from .ali_embedding import AliEmbeddings
 
 from .db_util import schedule_insert_db, query
 from .mariadb_util import get_ot_id_by_alias
@@ -17,4 +18,5 @@ __all__ = ['schedule_insert_db',
            'LLMRequestConfig',
            'LLMClientConfig',
            'get_ot_id_by_alias',
+           'AliEmbeddings',
            ]

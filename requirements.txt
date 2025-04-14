@@ -6,3 +6,6 @@ mcp-server
 openai
 mcp
 mysql-connector-python
+llama-index
+llama-index-vector-stores-postgres
+llama_index.llms.siliconflow 
