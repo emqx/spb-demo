@@ -2,7 +2,7 @@ from dotenv import load_dotenv
 import os
 import paho.mqtt.client as mqtt
 from google.protobuf.json_format import MessageToJson
-from spb_pb2 import Payload  # Import the Payload message class
+from spb.spb_pb2 import Payload  # Import the Payload message class
 import json
 import asyncio
 from concurrent.futures import ThreadPoolExecutor

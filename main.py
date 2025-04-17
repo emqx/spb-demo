@@ -1,6 +1,9 @@
-def main():
-    print("Hello from spb-demo!")
+from db import mariadb
+from dotenv import load_dotenv
+import logging
 
+load_dotenv()
+logging.basicConfig(level=logging.INFO, filename="./logs/spb_demo.log", filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
 
-if __name__ == "__main__":
-    main()
+mariadb = mariadb.Client()
+mariadb.connect()

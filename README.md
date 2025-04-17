@@ -67,43 +67,22 @@ use demo;
 ```
 - Create tables
 ```sql
-CREATE TABLE int_tags (
+ CREATE TABLE tags (
   ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value INT,
+  tag STRING,
+  device STRING,
+  value STRING,
   timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
+  PARTITION BY HASH(device) PARTITIONS 8
   ENGINE=TimeSeries
   with (ttl='10d');
 
-CREATE TABLE float_tags (
+ CREATE TABLE devices (
   ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value FLOAT,
+  device STRING,
+  status STRING,
   timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
-  ENGINE=TimeSeries
-  with (ttl='10d');
-
-CREATE TABLE double_tags (
-  ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value DOUBLE,
-  timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
-  ENGINE=TimeSeries
-  with (ttl='10d');
-
-CREATE TABLE boolean_tags (
-  ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value BOOLEAN,
-  timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
+  PARTITION BY HASH(device) PARTITIONS 8
   ENGINE=TimeSeries
   with (ttl='10d');
 ```
@@ -114,14 +93,21 @@ Refer to [doc](https://mariadb.com/resources/blog/get-started-with-mariadb-using
 Create a table in MariaDB to store the OT & IT mapping. For example, we have a telemetry data reported from `factory_1`, which is an identifier from OT pespective. Normally, for example, people would call the `factory_1` as `LA factory`, which means the factory locates in Los Angeles.
 
 ```sql
-CREATE DATABASE sample;
-USE sample;
+CREATE DATABASE demo;
+USE demo;
+CREATE TABLE device_alias (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     device VARCHAR(255) NOT NULL,
+     alias VARCHAR(255) NOT NULL,
+     UNIQUE KEY (device, alias)
+);
 CREATE TABLE ot_it_mapping (
     ot_id VARCHAR(50) PRIMARY KEY,
     it_alias VARCHAR(100) NOT NULL
 );
 
 -- Insert the example data
+INSERT INTO device_alias (device, alias) VALUES ('modbus', '温度传感器');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('factory_1', 'LA factory');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('assembly_1', 'Big boy');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('test', 'Bee');  
