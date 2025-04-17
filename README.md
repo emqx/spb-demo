@@ -10,11 +10,12 @@ Follow the steps below to set up and run the application:
 git clone https://github.com/emqx/spb_demo/
 cd spb_demo
 ```
+2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-2. Create a Virtual Environment
+3. Install Dependencies and Activate Virtual Environment
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+uv sync
+uv venv
 ```
 
 ## EMQX Enterprise 5.6.x

@@ -1,0 +1,17 @@
+[project]
+name = "spb-demo"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+	"flightsql-dbapi>=0.2.2",
+    "mcp[cli]>=1.6.0",
+    "paho-mqtt>=2.1.0",
+    "pandas>=2.2.3",
+    "protobuf>=6.30.2",
+    "pyarrow>=19.0.1",
+    "pymongo>=4.12.0",
+    "python-dotenv>=1.1.0",
+    "ruff>=0.11.4",	
+]
