@@ -62,7 +62,7 @@ async def get_device_status_by_sql(sql: str) -> str:
     devices table schema:
         ts: timestamp, timezone is UTC+0
         device: device name
-        status: device status, online/offline
+        status: device status, options: online, offline
 
     Args:
         sql: SQL query, format: SELECT * FROM devices [WHERE device = 'device_name'] [AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800'] [AND status = 'online']; 
