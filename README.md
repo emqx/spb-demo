@@ -190,7 +190,7 @@ PGSQL_CONN=postgresql://emqx:public@localhost:5432
 PGSQL_DB=mydatabase
 PGSQL_TABLE=test_table
 
-
+MCP_SRV_BASE_DIR=/Users/rocky/Downloads/workspace/spb_demo
 ```
 
 ## Run the application

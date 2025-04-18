@@ -9,3 +9,8 @@ mysql-connector-python
 llama-index
 llama-index-vector-stores-postgres
 llama_index.llms.siliconflow 
+llama_index.llms.openai_like
+fastapi 
+uvicorn
+sse-starlette 
+httpx
