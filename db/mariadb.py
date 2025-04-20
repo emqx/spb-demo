@@ -99,3 +99,31 @@ class Client:
         finally:
             cursor.close()
     
+    def get_ot_id_by_alias(self, it_alias: str) -> list[str]:
+        """
+        Retrieve OT IDs based on fuzzy matching of descriptions from the ot_it_mapping table
+        
+        Args:
+            description (str): The description to search for
+            
+        Returns:
+            list[str]: A list of matching OT IDs, empty list if none found
+        """
+        try:
+            cursor = self.connection.cursor()
+            # Using LIKE with wildcards for fuzzy matching
+            query = "SELECT ot_id FROM ot_it_mapping WHERE it_alias LIKE %s"
+            # Add wildcards before and after the search term
+            search_term = f"%{it_alias}%"
+            cursor.execute(query, (search_term,))
+            
+            results = cursor.fetchall()
+            return [result[0] for result in results] if results else []
+            
+        except mysql.connector.Error as err:
+            print(f"Error querying database: {err}")
+            return []
+            
+        finally:
+            cursor.close()
+    

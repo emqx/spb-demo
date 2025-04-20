@@ -1,14 +1,13 @@
+import os
+
 from llama_index.core import SimpleDirectoryReader,StorageContext,VectorStoreIndex,Settings
 from llama_index.core.node_parser import JSONNodeParser
 from llama_index.llms.siliconflow import SiliconFlow
-from utils import AliEmbeddings
 from llama_index.vector_stores.postgres import PGVectorStore
-import os
-from dotenv import load_dotenv
 from sqlalchemy import make_url
-# import psycopg2
 
-load_dotenv()
+from ali_embedding import AliEmbeddings
+# import psycopg2
 
 Settings.llm = SiliconFlow(api_key=os.getenv("SF_API_KEY"),model=os.getenv("MODEL_NAME"),temperature=0,max_tokens=4000, timeout=180)
 embedding = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))

@@ -1,3 +1,6 @@
+import os
+from typing import Any, Union
+
 from llama_index.core.workflow import (
     Event,
     StartEvent,
@@ -5,24 +8,15 @@ from llama_index.core.workflow import (
     Workflow,
     step,
     Context,
-    InputRequiredEvent,
-    HumanResponseEvent,
 )
 
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.llms import ChatMessage, MessageRole 
 from llama_index.llms.siliconflow import SiliconFlow
-from dotenv import load_dotenv
-from contextlib import asynccontextmanager
-import os
-from dataclasses import asdict
-from typing import Any, Union
 from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
 from llama_index.core.agent.workflow import (AgentWorkflow, AgentStream, ToolCallResult)
 
-
-load_dotenv()
 
 def cprint(text: str, end: str = "", flush: bool = True):
     WORKFLOW_COLOR = '\033[36m'
@@ -38,7 +32,6 @@ class ToolExecResultEvent(Event):
     result: str
 
 class DemoFlow(Workflow):
-
     def __init__(
             self,
             llm: OpenAILike,
@@ -55,8 +48,8 @@ class DemoFlow(Workflow):
     async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ToolExecResultEvent | StopEvent]:
         ctx.write_event_to_stream(ProgressEvent(msg=f"Connectting to MCP servers.\n\n"))
         servers = [ 
-            {"command_or_url":f"{base_dir}/venv/bin/python", "args":[f"{base_dir}/spb_app.py"]},
-            {"command_or_url":f"{base_dir}/venv/bin/python", "args":[f"{base_dir}/biz_app.py"]},
+            {"command_or_url":f"uv", "args":[f"./mcp/biz_app.py"]},
+            {"command_or_url":f"uv", "args":[f"./spb/mcp_server.py"]},
         ]
 
         all_tools = []

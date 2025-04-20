@@ -141,48 +141,14 @@ psql -h localhost -U emqx -d mydatabase -p 5432
 ```
 
 ## Usage
-Create `.env` file under the root directory, and specify the following values.
-
-```
-#LLMs
-DS_API_KEY=
-DS_MODEL_NAME=deepseek-chat
-DS_API_BASE_URL=https://api.deepseek.com
-
-SF_API_KEY=
-MODEL_NAME=Pro/deepseek-ai/DeepSeek-V3
-# MODEL_NAME=Pro/deepseek-ai/DeepSeek-R1
-
-EMBEDDING_API_KEY=
-EMBEDDING_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-
-#EMQX Broker
-MQTT_BROKER=127.0.0.1
-MQTT_PORT=1883
-MQTT_TOPIC=spBv1.0/#
-
-#MariaDB
-MARIADB_HOST=localhost
-MARIADB_DATABASE=sample
-MARIADB_USER=root
-MARIADB_PASSWORD=Password123!
-
-#Datalayers
-DB_HOST=127.0.0.1
-DB_PORT=8361
-DB_TOKEN=YWRtaW46cHVibGlj
-
-#PgSQL vector database
-PGSQL_CONN=postgresql://emqx:public@localhost:5432
-PGSQL_DB=mydatabase
-PGSQL_TABLE=test_table
-
-MCP_SRV_BASE_DIR=/Users/rocky/Downloads/workspace/spb_demo
-```
+Copy `.env.example` to `.env` and modify the values accordingly.
 
 ## Run the application
 **Steps**
-- Run the `spb_service.py` to start web application.
+- Run the `main.py` to start web application.
+```bash
+  uv run main.py
+```
 - Open http://localhost:8000/ in browser.
 - Type questions in the chatbox.
 

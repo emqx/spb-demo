@@ -1,7 +1,12 @@
+from dotenv import load_dotenv
+
 from mcp.server.fastmcp import FastMCP
-from utils import get_ot_id_by_alias
+from db.mariadb import Client
+
+load_dotenv()
 
 mcp = FastMCP("biz_app")
+client = Client()
 
 @mcp.tool()
 async def get_ot_key(alias:str) -> list[str]:
@@ -12,7 +17,7 @@ async def get_ot_key(alias:str) -> list[str]:
 
     Return: The key values list that match to the specified alias or descriptive text, system use the key to match the real data reported from devices.
     '''
-    return get_ot_id_by_alias(alias)
+    return client.get_ot_id_by_alias(alias)
 
 if __name__ == "__main__":
     # Initialize and run the server
