@@ -21,7 +21,7 @@ uv venv
 ## EMQX Enterprise 5.6.x
 Install EMQX Enterprise 5.6.x and start it.
 
-## NeuronEX
+## NeuronEX   >= 3.5.1
 Install NeuronEX and create related devices. 
 
 - You can create the device and tag configurations as in below.

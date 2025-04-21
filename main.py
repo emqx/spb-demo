@@ -27,7 +27,7 @@ async def root():
 
 llm = SiliconFlow(
     api_key=os.getenv("SFAPI_KEY"),
-    model=os.getenv("MODEL_NAME"),
+    model=str(os.getenv("MODEL_NAME")),
     temperature=0.6,
     max_tokens=4000,
     timeout=180
