@@ -2,7 +2,7 @@ from pandas import Timestamp
 
 from db.datalayer import DB
 from db.mariadb import Client
-from spb.spb_client import SparkPlugBClient
+from spb_client import SparkPlugBClient
 
 
 class SparkPlugBApp:

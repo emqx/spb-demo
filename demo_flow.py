@@ -48,10 +48,12 @@ class DemoFlow(Workflow):
 
     @step
     async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ToolExecResultEvent | StopEvent]:
+        project_path = os.path.abspath(os.path.dirname(__file__))
+        print(f"Project path: {project_path}")
         ctx.write_event_to_stream(ProgressEvent(msg=f"Connectting to MCP servers.\n\n"))
         servers = [ 
-            {"command_or_url":f"uv", "args":[f"./mcp/biz_app.py"]},
-            {"command_or_url":f"uv", "args":[f"./spb/mcp_server.py"]},
+            {"command_or_url":f"uv", "args":["--directory", project_path, "run", f"biz_app.py"]},
+            {"command_or_url":f"uv", "args":["--directory", project_path, "run", f"spb_server.py"]},
         ]
 
         all_tools = []
