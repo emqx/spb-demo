@@ -8,6 +8,7 @@ dependencies = [
 	"fastapi>=0.115.12",
 	"flightsql-dbapi>=0.2.2",
 	"llama-index>=0.12.31",
+	"llama-index-embeddings-huggingface>=0.5.3",
 	"llama-index-llms-openai-like>=0.3.4",
 	"llama-index-llms-siliconflow>=0.2.1",
 	"llama-index-vector-stores-postgres>=0.4.2",

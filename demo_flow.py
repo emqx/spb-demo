@@ -1,5 +1,6 @@
 import os
 from typing import Any, Union
+import logging
 
 from llama_index.core.workflow import (
     Event,
@@ -18,6 +19,8 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.llms.siliconflow import SiliconFlow
 
 from llama_mcp import BasicMCPClient, McpToolSpec
+
+from db.rag import RAG
 
 
 def cprint(text: str, end: str = "", flush: bool = True):
@@ -43,8 +46,16 @@ class DemoFlow(Workflow):
         self.memory = memory or ChatMemoryBuffer(token_limit=8000)
         self.client = None
         self.llm = llm
+        self.rag = RAG()
+        #self.rag.create_index() # Create index for the first time
+        self.rag.load_index()
         super().__init__(*args, **kwargs)
-        
+    
+    async def search_documents(self, query: str) -> str:
+        """Useful for answering natural language questions about an personal essay written by Paul Graham."""
+        logging.info(f"Searching documents with query: {query}")
+        response = await self.rag.query(query)
+        return str(response)
 
     @step
     async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ToolExecResultEvent | StopEvent]:
@@ -72,6 +83,7 @@ class DemoFlow(Workflow):
         system_prompt="You have a set of tools to extract the useful information from external database system, which stores related Sparkplug data. You task is to use the tools extract the right information for user's input."
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM,content=system_prompt))
 
+        all_tools.append(self.search_documents)
         query_info = AgentWorkflow.from_tools_or_functions(
             tools_or_functions=all_tools,
             llm=self.llm,

@@ -185,3 +185,4 @@ wheels/
 .venv
 
 logs/*.log
+storage/*.json
