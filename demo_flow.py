@@ -10,12 +10,14 @@ from llama_index.core.workflow import (
     Context,
 )
 
-from llama_index.llms.openai_like import OpenAILike
+
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.llms import ChatMessage, MessageRole 
-from llama_index.llms.siliconflow import SiliconFlow
-from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
 from llama_index.core.agent.workflow import (AgentWorkflow, AgentStream, ToolCallResult)
+from llama_index.llms.openai_like import OpenAILike
+from llama_index.llms.siliconflow import SiliconFlow
+
+from llama_mcp import BasicMCPClient, McpToolSpec
 
 
 def cprint(text: str, end: str = "", flush: bool = True):

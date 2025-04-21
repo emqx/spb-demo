@@ -8,7 +8,12 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import json
 
-from mcp.flow import DemoFlow, Context, ProgressEvent
+import sys
+
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".venv/lib/python3.11/site-packages/mcp")))
+
+
+from demo_flow import DemoFlow, Context, ProgressEvent
 
 load_dotenv()
 
@@ -43,7 +48,7 @@ async def event_generator(prompt: str):
                 # print(ev.msg, end="", flush=True)
                 yield {
                     "event": "message",
-                    "data": f'{json.dumps({'content': ev.msg})}\n\n'
+                    "data": f'{json.dumps({"content": ev.msg})}\n\n'
                 }
     except Exception as e:
         yield {
