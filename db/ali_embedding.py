@@ -4,7 +4,6 @@ from openai import OpenAI
 from llama_index.core.embeddings import BaseEmbedding
 
 class AliEmbeddings(BaseEmbedding):
-    
     def __init__(self, key:str, base_url:str, model_name:str, **kwargs: Any,) -> None:
         super().__init__(**kwargs)
         self.model_name = model_name

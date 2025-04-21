@@ -10,11 +10,12 @@ Follow the steps below to set up and run the application:
 git clone https://github.com/emqx/spb_demo/
 cd spb_demo
 ```
+2. Install [uv](https://docs.astral.sh/uv/getting-started/installation/)
 
-2. Create a Virtual Environment
+3. Install Dependencies and Activate Virtual Environment
 ```bash
-python3 -m venv venv
-source venv/bin/activate
+uv sync
+uv venv
 ```
 
 ## EMQX Enterprise 5.6.x
@@ -66,43 +67,22 @@ use demo;
 ```
 - Create tables
 ```sql
-CREATE TABLE int_tags (
+ CREATE TABLE tags (
   ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value INT,
+  tag STRING,
+  device STRING,
+  value STRING,
   timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
+  PARTITION BY HASH(device) PARTITIONS 8
   ENGINE=TimeSeries
   with (ttl='10d');
 
-CREATE TABLE float_tags (
+ CREATE TABLE devices (
   ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value FLOAT,
+  device STRING,
+  status STRING,
   timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
-  ENGINE=TimeSeries
-  with (ttl='10d');
-
-CREATE TABLE double_tags (
-  ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value DOUBLE,
-  timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
-  ENGINE=TimeSeries
-  with (ttl='10d');
-
-CREATE TABLE boolean_tags (
-  ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag_name STRING,
-  device_key STRING,
-  tag_value BOOLEAN,
-  timestamp KEY (ts))
-  PARTITION BY HASH(device_key) PARTITIONS 8
+  PARTITION BY HASH(device) PARTITIONS 8
   ENGINE=TimeSeries
   with (ttl='10d');
 ```
@@ -113,14 +93,21 @@ Refer to [doc](https://mariadb.com/resources/blog/get-started-with-mariadb-using
 Create a table in MariaDB to store the OT & IT mapping. For example, we have a telemetry data reported from `factory_1`, which is an identifier from OT pespective. Normally, for example, people would call the `factory_1` as `LA factory`, which means the factory locates in Los Angeles.
 
 ```sql
-CREATE DATABASE sample;
-USE sample;
+CREATE DATABASE demo;
+USE demo;
+CREATE TABLE device_alias (
+     id INT AUTO_INCREMENT PRIMARY KEY,
+     device VARCHAR(255) NOT NULL,
+     alias VARCHAR(255) NOT NULL,
+     UNIQUE KEY (device, alias)
+);
 CREATE TABLE ot_it_mapping (
     ot_id VARCHAR(50) PRIMARY KEY,
     it_alias VARCHAR(100) NOT NULL
 );
 
 -- Insert the example data
+INSERT INTO device_alias (device, alias) VALUES ('modbus', '温度传感器');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('factory_1', 'LA factory');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('assembly_1', 'Big boy');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('test', 'Bee');  
@@ -154,48 +141,14 @@ psql -h localhost -U emqx -d mydatabase -p 5432
 ```
 
 ## Usage
-Create `.env` file under the root directory, and specify the following values.
-
-```
-#LLMs
-DS_API_KEY=
-DS_MODEL_NAME=deepseek-chat
-DS_API_BASE_URL=https://api.deepseek.com
-
-SF_API_KEY=
-MODEL_NAME=Pro/deepseek-ai/DeepSeek-V3
-# MODEL_NAME=Pro/deepseek-ai/DeepSeek-R1
-
-EMBEDDING_API_KEY=
-EMBEDDING_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-
-#EMQX Broker
-MQTT_BROKER=127.0.0.1
-MQTT_PORT=1883
-MQTT_TOPIC=spBv1.0/#
-
-#MariaDB
-MARIADB_HOST=localhost
-MARIADB_DATABASE=sample
-MARIADB_USER=root
-MARIADB_PASSWORD=Password123!
-
-#Datalayers
-DB_HOST=127.0.0.1
-DB_PORT=8361
-DB_TOKEN=YWRtaW46cHVibGlj
-
-#PgSQL vector database
-PGSQL_CONN=postgresql://emqx:public@localhost:5432
-PGSQL_DB=mydatabase
-PGSQL_TABLE=test_table
-
-MCP_SRV_BASE_DIR=/Users/rocky/Downloads/workspace/spb_demo
-```
+Copy `.env.example` to `.env` and modify the values accordingly.
 
 ## Run the application
 **Steps**
-- Run the `spb_service.py` to start web application.
+- Run the `main.py` to start web application.
+```bash
+  uv run main.py
+```
 - Open http://localhost:8000/ in browser.
 - Type questions in the chatbox.
 
