@@ -49,7 +49,6 @@ class DemoFlow(Workflow):
     @step
     async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ToolExecResultEvent | StopEvent]:
         project_path = os.path.abspath(os.path.dirname(__file__))
-        print(f"Project path: {project_path}")
         ctx.write_event_to_stream(ProgressEvent(msg=f"Connectting to MCP servers.\n\n"))
         servers = [ 
             {"command_or_url":f"uv", "args":["--directory", project_path, "run", f"biz_app.py"]},
@@ -113,7 +112,7 @@ class DemoFlow(Workflow):
 
 
 async def main():
-    llm = SiliconFlow(api_key=os.getenv("SF_API_KEY"),model=os.getenv("MODEL_NAME"),temperature=0.2,max_tokens=4000, timeout=180)
+    llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"),model=os.getenv("MODEL_NAME"),temperature=0.2,max_tokens=4000, timeout=180)
     w = DemoFlow(timeout=None, llm=llm, verbose=True)
     ctx = Context(w)
 

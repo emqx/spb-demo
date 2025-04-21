@@ -1,4 +1,5 @@
 import os
+import logging
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
@@ -8,12 +9,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import json
 
-import sys
-
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), ".venv/lib/python3.11/site-packages/mcp")))
-
-
 from demo_flow import DemoFlow, Context, ProgressEvent
+
+project_path = os.path.abspath(os.path.dirname(__file__))
+logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "logs/mcp_service.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
 
 load_dotenv()
 
@@ -26,16 +25,17 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 async def root():
     return FileResponse("index.html")
 
+llm = SiliconFlow(
+    api_key=os.getenv("SFAPI_KEY"),
+    model=os.getenv("MODEL_NAME"),
+    temperature=0.6,
+    max_tokens=4000,
+    timeout=180
+)
+
 async def event_generator(prompt: str):
     # Initialize the LLM and workflow
-    llm = SiliconFlow(
-        api_key=os.getenv("SF_API_KEY"),
-        model=os.getenv("MODEL_NAME"),
-        temperature=0.6,
-        max_tokens=4000,
-        timeout=180
-    )
-    workflow = DemoFlow(timeout=None, llm=llm, verbose=True)
+    workflow = DemoFlow(timeout=None, llm=llm, verbose=False)
     ctx = Context(workflow)
 
     # Run the workflow

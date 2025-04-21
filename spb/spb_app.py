@@ -59,5 +59,5 @@ class SparkPlugBApp:
         self.client.disconnect()
     
     def connect(self) -> bool:
-        return self.client.connect()
+        return self.client.connect() and self.mariadb.connect()
     

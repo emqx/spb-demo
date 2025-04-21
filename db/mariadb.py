@@ -20,6 +20,7 @@ class Client:
         self.host = os.getenv("MARIADB_HOST", "localhost")
         self.user = os.getenv("MARIADB_USER", "root")
         self.password = os.getenv("MARIADB_PASSWORD", "public")
+        self.connection = None
     
     def connect(self) -> bool:
         try:
@@ -35,6 +36,10 @@ class Client:
             self.connection = connection
             self.__create_device_table()
             self.__create_ot_it_mapping_table()
+            #self.insert_device_alias("温度传感器", "modbus")
+            #self.insert_ot_it_mapping("factory_1", "LA factory")
+            #self.insert_ot_it_mapping('assembly_1', "Big boy")
+            #self.insert_ot_it_mapping('test', 'Bee')
             return True
         except mysql.connector.Error as err:
             logging.critical(f"Error connecting to MariaDB: {err}")
@@ -96,6 +101,18 @@ class Client:
             logging.info(f"Inserted device alias {alias} for device {device}")
         except mysql.connector.Error as err:
             logging.error(f"Error inserting device alias: {err}")
+        finally:
+            cursor.close()
+    
+    def insert_ot_it_mapping(self, ot_id: str, it_alias: str):
+        try:
+            cursor = self.connection.cursor()
+            query = "INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES (%s, %s)"
+            cursor.execute(query, (ot_id, it_alias))
+            self.connection.commit()
+            logging.info(f"Inserted OT ID {ot_id} with alias {it_alias}")
+        except mysql.connector.Error as err:
+            logging.error(f"Error inserting OT ID mapping: {err}")
         finally:
             cursor.close()
     

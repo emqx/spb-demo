@@ -1,15 +1,23 @@
+import os
+import logging
+
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
-import logging
 
 from spb.spb_app import SparkPlugBApp
 
 load_dotenv()
 
-logging.basicConfig(level=logging.INFO, filename="./logs/spb_app.log", filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
+project_path = os.path.abspath(os.path.dirname(__file__))
+logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "logs/spb_server.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
 
 mcp = FastMCP()
 spb = SparkPlugBApp()
+
+connect = spb.connect()
+logging.info(f"Client connect result: {connect}")
+xx = spb.query_device_by_alias('温度传感器')
+logging.info(f"Device by alias: {xx}")
 
 @mcp.tool()
 async def get_device_by_alias(alias: str) -> str:
