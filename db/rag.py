@@ -3,7 +3,7 @@ import time
 from dotenv import load_dotenv
 import logging
 
-from llama_index.core import SimpleDirectoryReader,StorageContext,VectorStoreIndex,Settings
+from llama_index.core import SimpleDirectoryReader,StorageContext,VectorStoreIndex,Settings, load_index_from_storage
 from llama_index.llms.siliconflow import SiliconFlow
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.postgres import PGVectorStore
@@ -28,17 +28,18 @@ class RAG:
             use_pg = False
 
         if local_embedding:
-            self.__embedding = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
             Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
             self.__dimension = 768
         else:
-            self.__embedding = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))
             Settings.embed_model = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))
             self.__dimension = 1024
+
         if use_pg:
             self.use_pg = True
+            #self.__store = self.__create_pg_store(dimension=self.__dimension)
         else:
             self.use_pg = False
+            #self.__store = StorageContext.from_defaults(persist_dir="./storage")
         self.engine = None
         self.__index = None
         #self.__index = VectorStoreIndex.from_vector_store(vector_store=self.__store, embed_model=self.__embedding)
@@ -59,8 +60,13 @@ class RAG:
         logging.info(f"Index created in {end_time - start_time:.2f} seconds, {self.use_pg}")
     
     def load_index(self):
+        if self.use_pg:
+            self.__store = self.__create_pg_store(dimension=self.__dimension)
+            self.__index = VectorStoreIndex.from_vector_store(vector_store=self.__store, embed_model=Settings.embed_model)
+        else:
+            self.__store = StorageContext.from_defaults(persist_dir="./storage")
+            self.__index = load_index_from_storage(self.__store)
         start_time = time.time()
-        self.__index = VectorStoreIndex.from_vector_store(vector_store=self.__store, embed_model=self.__embedding)
         self.engine = self.__index.as_query_engine()
         end_time = time.time()
         logging.info(f"Index loaded in {end_time - start_time:.2f} seconds")
