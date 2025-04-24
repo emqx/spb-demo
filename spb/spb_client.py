@@ -6,6 +6,7 @@ import json
 import time
 from pandas import Timestamp
 import random
+from dotenv import load_dotenv
 
 from db.datalayer import DB
 
@@ -15,7 +16,7 @@ class SparkPlugBClient:
     def __init__(self):
         self.datalayer = DB()
         self.client = None
-        self.broker = os.getenv("MQTT_BROKER", "broker.emqx.io")
+        self.broker = os.getenv("MQTT_BROKER")
         self.port = int(os.getenv("MQTT_PORT", 1883))
         self.device_tag_alias = {}
         self.device_tags = {}
@@ -133,3 +134,4 @@ class SparkPlugBClient:
             self.client.disconnect()
             self.client.loop_stop()
             logging.info("Disconnected from MQTT broker")
+    

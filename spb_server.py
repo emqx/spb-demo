@@ -14,11 +14,6 @@ logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "log
 mcp = FastMCP()
 spb = SparkPlugBApp()
 
-connect = spb.connect()
-logging.info(f"Client connect result: {connect}")
-xx = spb.query_device_by_alias('温度传感器')
-logging.info(f"Device by alias: {xx}")
-
 @mcp.tool()
 async def get_device_by_alias(alias: str) -> str:
     """Get device name by alias.
@@ -164,14 +159,51 @@ async def get_device_tag_history_by_sql(sql) -> str:
 		})
 	return history
     
+from mcp.server import Server
+from starlette.requests import Request
+from starlette.applications import Starlette
+from mcp.server.sse import SseServerTransport
+from starlette.routing import Mount, Route
 
-logging.info("Starting SparkPlugB mcp server...")
+def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:
+    """Create a Starlette application that can server the provied mcp server with SSE."""
+    sse = SseServerTransport("/messages/")
 
-if not spb.connect():
-    exit(1)
+    async def handle_sse(request: Request) -> None:
+        async with sse.connect_sse(
+                request.scope,
+                request.receive,
+                request._send,  # noqa: SLF001
+        ) as (read_stream, write_stream):
+            await mcp_server.run(
+                read_stream,
+                write_stream,
+                mcp_server.create_initialization_options(),
+            )
 
-mcp.run(transport="stdio")
+    return Starlette(
+        debug=debug,
+        routes=[
+            Route("/sse", endpoint=handle_sse),
+            Mount("/messages/", app=sse.handle_post_message),
+        ],
+    )
 
-# sleep, wait ctrl+c
-spb.stop()
-logging.info("Disconnected from MQTT broker.")
+if __name__ == "__main__":
+    import time
+    import uvicorn
+    logging.info("Starting SparkPlugB mcp server...")
+
+    if not spb.connect():
+        exit(1)
+    #mcp.run(transport="stdio")
+    starlette_app = create_starlette_app(mcp._mcp_server, debug=True)
+    uvicorn.run(starlette_app, host="0.0.0.0", port=8081)
+
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        logging.info("Shutting down...")
+        spb.stop()
+        logging.warning("SparkPlugB mcp server stopped")

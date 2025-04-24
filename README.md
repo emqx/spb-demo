@@ -145,7 +145,11 @@ Copy `.env.example` to `.env` and modify the values accordingly.
 
 ## Run the application
 **Steps**
-- Run the `main.py` to start web application.
+- Run sparkplug mcp server
+```bash
+  uv run spb_server.py
+```
+- Run main application
 ```bash
   uv run main.py
 ```

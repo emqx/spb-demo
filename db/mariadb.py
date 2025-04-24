@@ -60,8 +60,6 @@ class Client:
             logging.info("Table device_alias created successfully")
         except mysql.connector.Error as err:
             logging.error(f"Error creating table: {err}")
-        finally:
-            cursor.close()
     
     def __create_ot_it_mapping_table(self):
         try:
@@ -76,8 +74,6 @@ class Client:
             logging.info("Table ot_it_mapping created successfully")
         except mysql.connector.Error as err:
             logging.error(f"Error creating table: {err}")
-        finally:
-            cursor.close()
     
     def query_device_by_alias(self, alias: str) -> str | None:
         try:
@@ -89,8 +85,7 @@ class Client:
         except mysql.connector.Error as err:
             logging.error(f"Error querying database: {err}")
             return None
-        finally:
-            cursor.close()
+
     
     def insert_device_alias(self, alias: str, device: str): 
         try:
@@ -101,8 +96,6 @@ class Client:
             logging.info(f"Inserted device alias {alias} for device {device}")
         except mysql.connector.Error as err:
             logging.error(f"Error inserting device alias: {err}")
-        finally:
-            cursor.close()
     
     def insert_ot_it_mapping(self, ot_id: str, it_alias: str):
         try:
@@ -113,8 +106,6 @@ class Client:
             logging.info(f"Inserted OT ID {ot_id} with alias {it_alias}")
         except mysql.connector.Error as err:
             logging.error(f"Error inserting OT ID mapping: {err}")
-        finally:
-            cursor.close()
     
     def get_ot_id_by_alias(self, it_alias: str) -> list[str]:
         """
@@ -140,7 +131,4 @@ class Client:
         except mysql.connector.Error as err:
             print(f"Error querying database: {err}")
             return []
-            
-        finally:
-            cursor.close()
     
