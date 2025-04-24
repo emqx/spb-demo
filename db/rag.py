@@ -12,23 +12,33 @@ from ali_embedding import AliEmbeddings
 
 load_dotenv()
 Settings.llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"),model=str(os.getenv("MODEL_NAME")),temperature=0,max_tokens=4000, timeout=180)
-Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
 class RAG:
     def __init__(self):
-        local_embedding = os.getenv('EMBEDDING_LOCAL', True)
-        use_pg = os.getenv('EMBEDDING_PG', False)
+        local_embedding = os.getenv('EMBEDDING_LOCAL')
+        use_pg = os.getenv('EMBEDDING_PG')
+
+        if local_embedding == "True" or local_embedding == "true":
+            local_embedding = True
+        else:
+            local_embedding = False
+        
+        if use_pg == "True" or use_pg == "true":
+            use_pg = True
+        else:
+            use_pg = False
+
         if local_embedding:
             self.__embedding = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
+            Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
             self.__dimension = 768
         else:
             self.__embedding = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))
+            Settings.embed_model = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))
             self.__dimension = 1024
         if use_pg:
             self.use_pg = True
-            self.__store = self.__create_pg_store(dimension=self.__dimension)
         else:
             self.use_pg = False
-            self.__store = StorageContext.from_defaults(persist_dir="./storage")
         self.engine = None
         self.__index = None
         #self.__index = VectorStoreIndex.from_vector_store(vector_store=self.__store, embed_model=self.__embedding)
@@ -38,9 +48,11 @@ class RAG:
         start_time = time.time()
         if self.use_pg:
             index = RAG.create_index_pg(self.__dimension)
+            self.__store = self.__create_pg_store(dimension=self.__dimension)
             self.__index = index
         else:
             index = RAG.create_index_local()
+            self.__store = index.storage_context.vector_store;
             self.__index = index
         self.engine = self.__index.as_query_engine()
         end_time = time.time()
@@ -106,9 +118,10 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "../logs/rag.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
     load_dotenv()
     rag = RAG()
-    #rag.create_index()
-    rag.load_index()
+    rag.create_index()
+   # rag.load_index()
     start_time = time.time()
+    #response = rag.query("What did the author do in college?")
     response = rag.query("What i worked?")
     end_time = time.time()
     logging.info(f"Query time: {end_time - start_time:.2f} seconds")
