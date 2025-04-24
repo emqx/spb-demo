@@ -30,15 +30,19 @@ class RAG:
         if local_embedding:
             Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
             self.__dimension = 768
+            logging.info("Using local embedding model: BAAI/bge-base-en-v1.5")
         else:
             Settings.embed_model = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))
             self.__dimension = 1024
+            logging.info("Using Ali embedding model")
 
         if use_pg:
             self.use_pg = True
+            logging.info("Using PGVectorStore")
             #self.__store = self.__create_pg_store(dimension=self.__dimension)
         else:
             self.use_pg = False
+            logging.info("Using local VectorStore")
             #self.__store = StorageContext.from_defaults(persist_dir="./storage")
         self.engine = None
         self.__index = None
