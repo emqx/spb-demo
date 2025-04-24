@@ -39,15 +39,11 @@ class RAG:
         if use_pg:
             self.use_pg = True
             logging.info("Using PGVectorStore")
-            #self.__store = self.__create_pg_store(dimension=self.__dimension)
         else:
             self.use_pg = False
             logging.info("Using local VectorStore")
-            #self.__store = StorageContext.from_defaults(persist_dir="./storage")
         self.engine = None
         self.__index = None
-        #self.__index = VectorStoreIndex.from_vector_store(vector_store=self.__store, embed_model=self.__embedding)
-        #self.engine = self.__index.as_query_engine()
     
     def create_index(self):
         start_time = time.time()
@@ -128,8 +124,8 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "../logs/rag.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
     load_dotenv()
     rag = RAG()
-    rag.create_index()
-   # rag.load_index()
+    #rag.create_index()
+    rag.load_index()
     start_time = time.time()
     #response = rag.query("What did the author do in college?")
     response = rag.query("What i worked?")

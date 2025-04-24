@@ -11,7 +11,6 @@ from llama_index.core.workflow import (
     Context,
 )
 
-
 from llama_index.core.memory import ChatMemoryBuffer
 from llama_index.core.llms import ChatMessage, MessageRole 
 from llama_index.core.agent.workflow import (AgentWorkflow, AgentStream, ToolCallResult)
@@ -36,6 +35,25 @@ class ProgressEvent(Event):
 class ToolExecResultEvent(Event):
     result: str
 
+async def init_mcp_server():
+    project_path = os.path.abspath(os.path.dirname(__file__))
+    servers = [ 
+        {"command_or_url":f"uv", "args":["--directory", project_path, "run", f"biz_app.py"]},
+        #{"command_or_url":f"uv", "args":["--directory", project_path, "run", f"spb_server.py"]},
+        {"command_or_url":"http://localhost:8081/sse", "args":[]},
+    ]
+    all_tools = []
+    for server in servers:
+        mcp_client = BasicMCPClient(
+            command_or_url=server["command_or_url"],
+            args=server["args"]
+        )
+        mcp_tool = McpToolSpec(client=mcp_client)
+        #tools = mcp_tool.to_tool_list()
+        tools = await mcp_tool.to_tool_list_async()
+        all_tools.extend(tools)
+    return all_tools
+
 class DemoFlow(Workflow):
     def __init__(
             self,
@@ -51,34 +69,20 @@ class DemoFlow(Workflow):
         self.rag.load_index()
         super().__init__(*args, **kwargs)
     
-    async def search_documents(self, query: str) -> str:
+    def search_documents(self, query: str) -> str:
         """Useful for answering natural language questions about an personal essay written by Paul Graham."""
         logging.info(f"Searching documents with query: {query}")
-        response = await self.rag.query(query)
+        response = self.rag.query(query)
+        logging.info(f"Search result: {response}")
         return str(response)
 
     @step
     async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ToolExecResultEvent | StopEvent]:
-        project_path = os.path.abspath(os.path.dirname(__file__))
-        ctx.write_event_to_stream(ProgressEvent(msg=f"Connectting to MCP servers.\n\n"))
-        servers = [ 
-            {"command_or_url":f"uv", "args":["--directory", project_path, "run", f"biz_app.py"]},
-            {"command_or_url":f"uv", "args":["--directory", project_path, "run", f"spb_server.py"]},
-        ]
-
-        all_tools = []
-        for server in servers:
-            mcp_client = BasicMCPClient(
-                command_or_url=server["command_or_url"],
-                args=server["args"]
-            )
-            mcp_tool = McpToolSpec(client=mcp_client)
-            tools = await mcp_tool.to_tool_list_async()
-            all_tools.extend(tools)
+        all_tools = await init_mcp_server()
+        tools_name = [tool.metadata.name for tool in all_tools]
 
         # Add event showing available tools
-        tool_names = ", ".join([tool.metadata.name for tool in all_tools])
-        ctx.write_event_to_stream(ProgressEvent(msg=f"Available tools: {tool_names}\n\n"))
+        ctx.write_event_to_stream(ProgressEvent(msg=f"Available tools: {tools_name}\n\n"))
 
         system_prompt="You have a set of tools to extract the useful information from external database system, which stores related Sparkplug data. You task is to use the tools extract the right information for user's input."
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM,content=system_prompt))
@@ -88,7 +92,8 @@ class DemoFlow(Workflow):
             tools_or_functions=all_tools,
             llm=self.llm,
             system_prompt=system_prompt,
-            verbose=False
+            verbose=False,
+            timeout=180,
             )
         
         handler = query_info.run(user_msg=f'{ev.user_input}. Notice: NEVER surround your response with markdown code markers.')
@@ -135,7 +140,6 @@ async def main():
         if isinstance(ev, ProgressEvent):
            cprint(ev.msg)
     await handler
-
 
 if __name__ == "__main__":
     import asyncio
