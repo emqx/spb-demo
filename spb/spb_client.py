@@ -82,7 +82,7 @@ class SparkPlugBClient:
                         alias = metric['alias']
                         self.device_tag_alias[device][alias] = name 
                     time.sleep(0.01)
-                    logging.info(f"Device {device} tag {name} with alias {alias} inserted")
+                    logging.info(f"Device {device} tag {name} inserted")
                     
             elif 'DDEATH' in msg.topic:
                 logging.info(f"Device Death message received")
@@ -91,21 +91,24 @@ class SparkPlugBClient:
             elif 'DDATA' in msg.topic:
                 logging.info("Device Data message received")
                 metrics = json_obj['metrics']
-                for metric in metrics:
-                    tag_time = self.__timestamp_to_Timestamp(int(metric['timestamp']))
-                    datatype = metric['datatype']
-                    value = self.__parse_spb_value(metric)
+                if device not in self.device_tags:
+                    self.nbirth(topic_sp[1], topic_sp[-2])
+                else:
+                    for metric in metrics:
+                        tag_time = self.__timestamp_to_Timestamp(int(metric['timestamp']))
+                        datatype = metric['datatype']
+                        value = self.__parse_spb_value(metric)
 
-                    if 'name' in metric:
-                        name = metric['name']
-                        self.device_tags[device][name] = value
-                        self.datalayer.insert_tag(device, name, value, tag_time)
-                    else:
-                        alias = metric['alias']
-                        name = self.device_tag_alias[device].get(alias, alias)
-                        self.device_tags[device][name] = value
-                        self.datalayer.insert_tag(device, name, value, tag_time)
-                    time.sleep(0.05)
+                        if 'name' in metric:
+                            name = metric['name']
+                            self.device_tags[device][name] = value
+                            self.datalayer.insert_tag(device, name, value, tag_time)
+                        else:
+                            alias = metric['alias']
+                            name = self.device_tag_alias[device].get(alias, alias)
+                            self.device_tags[device][name] = value
+                            self.datalayer.insert_tag(device, name, value, tag_time)
+                        time.sleep(0.05)
             elif 'NDATA' in msg.topic:
                 logging.info("Node Data message received")
             else:
@@ -124,6 +127,13 @@ class SparkPlugBClient:
         else:
             logging.warning(f"Device {device} not found")
             return None
+    
+    def nbirth(self, group: str, node: str):
+        payload = Payload()
+        payload.timestamp = int(time.time() * 1000)
+        payload.metrics.add(name='Node Control/Rebirth', datatype=11, boolean_value=True)
+        msg = payload.SerializeToString()
+        self.client.publish(f'spBv1.0/{group}/NCMD/{node}', msg, qos=0)
     
     def connect(self) -> bool:
         self.client = mqtt.Client()
