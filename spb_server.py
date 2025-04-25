@@ -1,5 +1,6 @@
 import os
 import logging
+import time
 
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
@@ -13,6 +14,16 @@ logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "log
 
 mcp = FastMCP()
 spb = SparkPlugBApp()
+
+@mcp.tool()
+async def get_current_time() -> str:
+    """Get current local time.
+
+    Returns:
+        Current time, format: YYYY-MM-DD HH:MM:SS, e.g. 2023-10-01 00:00:00.
+    """
+    logging.info("Getting current time")
+    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
 
 @mcp.tool()
 async def get_device_by_alias(alias: str) -> str:
