@@ -65,8 +65,11 @@ class DemoFlow(Workflow):
         self.client = None
         self.llm = llm
         self.rag = RAG()
-        #self.rag.create_index() # Create index for the first time
-        self.rag.load_index()
+        try:
+            self.rag.load_index()
+        except Exception as e:
+            self.rag.create_index() # Create index for the first time
+            
         super().__init__(*args, **kwargs)
     
     def search_documents(self, query: str) -> str:
