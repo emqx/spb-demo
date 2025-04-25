@@ -71,13 +71,16 @@ class SparkPlugBClient:
                 self.device_tags[device] = {}
                 for metric in metrics:
                     name = metric['name']
-                    alias = metric['alias']
+
                     tag_time = self.__timestamp_to_Timestamp(int(metric['timestamp']))
                     datatype = metric['datatype']
                     value = self.__parse_spb_value(metric)
+
                     self.datalayer.insert_tag(device, name, value, tag_time)
-                    self.device_tag_alias[device][alias] = name 
                     self.device_tags[device][name] = value
+                    if 'alias' in metric:
+                        alias = metric['alias']
+                        self.device_tag_alias[device][alias] = name 
                     time.sleep(0.01)
                     logging.info(f"Device {device} tag {name} with alias {alias} inserted")
                     
@@ -89,13 +92,19 @@ class SparkPlugBClient:
                 logging.info("Device Data message received")
                 metrics = json_obj['metrics']
                 for metric in metrics:
-                    alias = metric['alias']
                     tag_time = self.__timestamp_to_Timestamp(int(metric['timestamp']))
                     datatype = metric['datatype']
                     value = self.__parse_spb_value(datatype, metric)
-                    name = self.device_tag_alias[device].get(alias, alias)
-                    self.device_tags[device][name] = value
-                    self.datalayer.insert_tag(device, name, value, tag_time)
+
+                    if 'name' in metric:
+                        name = metric['name']
+                        self.device_tags[device][name] = value
+                        self.datalayer.insert_tag(device, name, value, tag_time)
+                    else:
+                        alias = metric['alias']
+                        name = self.device_tag_alias[device].get(alias, alias)
+                        self.device_tags[device][name] = value
+                        self.datalayer.insert_tag(device, name, value, tag_time)
                     time.sleep(0.05)
             elif 'NDATA' in msg.topic:
                 logging.info("Node Data message received")
