@@ -65,7 +65,7 @@ class SparkPlugBClient:
             elif 'DBIRTH' in msg.topic:
                 logging.info("Device Birth message received")
                 btime = self.__timestamp_to_Timestamp(int(json_obj['timestamp']))
-                self.db.update_device_status(btime, device, 'online')
+                self.datalayer.update_device_status(btime, device, 'online')
                 metrics = json_obj['metrics']
                 self.device_tag_alias[device] = {}
                 self.device_tags[device] = {}
@@ -75,7 +75,7 @@ class SparkPlugBClient:
                     tag_time = self.__timestamp_to_Timestamp(int(metric['timestamp']))
                     datatype = metric['datatype']
                     value = self.__parse_spb_value(metric)
-                    self.db.insert_tag(device, name, value, tag_time)
+                    self.datalayer.insert_tag(device, name, value, tag_time)
                     self.device_tag_alias[device][alias] = name 
                     self.device_tags[device][name] = value
                     time.sleep(0.01)
@@ -84,7 +84,7 @@ class SparkPlugBClient:
             elif 'DDEATH' in msg.topic:
                 logging.info(f"Device Death message received")
                 btime = self.__timestamp_to_Timestamp(int(json_obj['timestamp']))
-                self.db.update_device_status(btime, device, 'offline')
+                self.datalayer.update_device_status(btime, device, 'offline')
             elif 'DDATA' in msg.topic:
                 logging.info("Device Data message received")
                 metrics = json_obj['metrics']
@@ -95,7 +95,7 @@ class SparkPlugBClient:
                     value = self.__parse_spb_value(datatype, metric)
                     name = self.device_tag_alias[device].get(alias, alias)
                     self.device_tags[device][name] = value
-                    self.db.insert_tag(device, name, value, tag_time)
+                    self.datalayer.insert_tag(device, name, value, tag_time)
                     time.sleep(0.05)
             elif 'NDATA' in msg.topic:
                 logging.info("Node Data message received")
