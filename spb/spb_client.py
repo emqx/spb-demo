@@ -94,7 +94,7 @@ class SparkPlugBClient:
                 for metric in metrics:
                     tag_time = self.__timestamp_to_Timestamp(int(metric['timestamp']))
                     datatype = metric['datatype']
-                    value = self.__parse_spb_value(datatype, metric)
+                    value = self.__parse_spb_value(metric)
 
                     if 'name' in metric:
                         name = metric['name']
