@@ -18,6 +18,7 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.llms.siliconflow import SiliconFlow
 
 from llama_mcp import BasicMCPClient, McpToolSpec
+import json
 
 from db.rag import RAG
 
@@ -61,7 +62,10 @@ class DemoFlow(Workflow):
             memory: ChatMemoryBuffer = None,
             *args,
             **kwargs):
-        self.memory = memory or ChatMemoryBuffer(token_limit=8000)
+        # Initialize memory if not provided
+        if memory is None:
+            memory = ChatMemoryBuffer(token_limit=64000)
+        self.memory = memory
         self.client = None
         self.llm = llm
         self.rag = RAG()
@@ -108,7 +112,10 @@ class DemoFlow(Workflow):
                 response += event.delta
             elif isinstance(event, ToolCallResult):
                 ctx.write_event_to_stream(ProgressEvent(msg=f'{event.tool_name}: {event.tool_kwargs}\n\n'))
-                # ctx.write_event_to_stream(ProgressEvent(msg=f'{event.tool_output}\n'))
+                ctx.write_event_to_stream(ProgressEvent(msg=f'{event.tool_output}\n'))
+                # Add tool invocation and result to memory
+                # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=f"I am using the tool '{event.tool_name}' with parameters: {event.tool_kwargs}"))
+                # self.memory.put(ChatMessage(role=MessageRole.TOOL, content=f"Tool output: {event.tool_output}"))
             # elif isinstance(event, ToolCallResult):
             #     print(event.tool_output, end="\n", flush=True)
 
@@ -119,13 +126,14 @@ class DemoFlow(Workflow):
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="You're an IIoT data analysis expert, and familar with SparkplugB specification. You task is to create different kinds of report that can help onsite engineers to understand the device status."))
-        self.memory.put(ChatMessage(role=MessageRole.USER, content="Generate a IIoT report based on user's input."))
+        self.memory.put(ChatMessage(role=MessageRole.USER, content="Generate an IIoT report based on returned result input."))
         chat_history = self.memory.get()
+        # print(chat_history)
 
         response = ""
         handle = await self.llm.astream_chat(chat_history)
         async for token in handle:
-            # cprint(token.delta)
+            cprint(token.delta)
             ctx.write_event_to_stream(ProgressEvent(msg=token.delta))
             response += token.delta
         return StopEvent(result=response)
@@ -136,7 +144,7 @@ async def main():
     w = DemoFlow(timeout=None, llm=llm, verbose=True)
     ctx = Context(w)
 
-    user_prompt = '''Query the offline status of  "Big boy" of last week.'''
+    user_prompt = '''查询过去一周设备 test 的离线情况'''
     handler = w.run(user_input=user_prompt, ctx=ctx)
 
     async for ev in handler.stream_events():

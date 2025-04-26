@@ -54,7 +54,7 @@ class SparkPlugBClient:
             spb_msg.ParseFromString(msg.payload)
             spb_msg_json = MessageToJson(spb_msg)
             json_obj = json.loads(spb_msg_json)
-            logging.info(f"Message received: {msg.topic} {spb_msg_json}")
+            # logging.info(f"Message received: {msg.topic} {spb_msg_json}")
             topic_sp = msg.topic.split('/')
             device = topic_sp[-1]
 
@@ -89,7 +89,7 @@ class SparkPlugBClient:
                 btime = self.__timestamp_to_Timestamp(int(json_obj['timestamp']))
                 self.datalayer.update_device_status(btime, device, 'offline')
             elif 'DDATA' in msg.topic:
-                logging.info("Device Data message received")
+                # logging.info("Device Data message received")
                 metrics = json_obj['metrics']
                 if device not in self.device_tags:
                     self.nbirth(topic_sp[1], topic_sp[-2])

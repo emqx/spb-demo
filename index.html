@@ -36,6 +36,18 @@
             height: 100vh;
         }
 
+        .session-info {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            background-color: rgba(255, 255, 255, 0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            font-size: 0.8rem;
+            color: #64748b;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
         .chat-messages {
             flex-grow: 1;
             overflow-y: auto;
@@ -173,6 +185,7 @@
 </head>
 <body>
     <div class="chat-container">
+        <div class="session-info" id="sessionInfo">Session: Initializing...</div>
         <div class="chat-messages" id="chatMessages">
             <!-- Messages will be added here -->
         </div>
@@ -201,6 +214,26 @@
         const submitBtn = document.getElementById('submitBtn');
         const chatMessages = document.getElementById('chatMessages');
         const loadingDiv = document.querySelector('.loading');
+        const sessionInfo = document.getElementById('sessionInfo');
+
+        // Generate a unique session ID for this tab
+        const tabSessionId = crypto.randomUUID();
+
+        // Function to get cookie by name
+        function getCookie(name) {
+            const value = `; ${document.cookie}`;
+            const parts = value.split(`; ${name}=`);
+            if (parts.length === 2) return parts.pop().split(';').shift();
+            return null;
+        }
+
+        // Update session info
+        function updateSessionInfo() {
+            sessionInfo.textContent = `Session: ${tabSessionId.slice(0, 8)}...`;
+        }
+
+        // Call updateSessionInfo initially
+        updateSessionInfo();
 
         function showLoading(show) {
             loadingDiv.style.display = show ? 'block' : 'none';
@@ -245,6 +278,7 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'X-Tab-Session': tabSessionId  // Add tab session ID in header
                     },
                     body: JSON.stringify({ prompt }),
                 });
@@ -309,6 +343,7 @@
                 addMessage(`Error: ${error.message}`, false);
             } finally {
                 showLoading(false);
+                updateSessionInfo();
             }
         }
 

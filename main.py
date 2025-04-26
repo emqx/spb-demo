@@ -1,15 +1,18 @@
 import os
 import logging
+import uuid
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
 from llama_index.llms.siliconflow import SiliconFlow
+from llama_index.llms.deepseek import DeepSeek
 from sse_starlette.sse import EventSourceResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 import json
 
 from demo_flow import DemoFlow, Context, ProgressEvent
+from session_store import SessionStore
 
 project_path = os.path.abspath(os.path.dirname(__file__))
 logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "logs/mcp_service.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
@@ -17,6 +20,7 @@ logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "log
 load_dotenv()
 
 app = FastAPI()
+session_store = SessionStore()
 
 # Add after creating the FastAPI app
 app.mount("/static", StaticFiles(directory="static"), name="static")
@@ -33,9 +37,16 @@ llm = SiliconFlow(
     timeout=180
 )
 
-async def event_generator(prompt: str):
+# llm = DeepSeek(model=os.getenv("DS_MODEL_NAME"), api_key=os.getenv("DS_API_KEY"),temperature=0.6,max_tokens=6000)
+
+async def event_generator(prompt: str, session_id: str):
+    # Get existing memory or create new one
+    memory = session_store.get_memory(session_id)
+    if memory is not None:
+        print(memory.get())
+    
     # Initialize the LLM and workflow
-    workflow = DemoFlow(timeout=None, llm=llm, verbose=False)
+    workflow = DemoFlow(timeout=None, llm=llm, verbose=True, memory=memory)
     ctx = Context(workflow)
 
     # Run the workflow
@@ -55,6 +66,9 @@ async def event_generator(prompt: str):
             "event": "error",
             "data": str(e)
         }
+    finally:
+        # Save the updated memory
+        session_store.save_memory(session_id, workflow.memory)
 
 @app.post("/stream")
 async def stream_llm_response(request: Request):
@@ -62,8 +76,13 @@ async def stream_llm_response(request: Request):
     data = await request.json()
     user_prompt = data.get("prompt", "")
     
+    # Get session ID from header, or generate new one if not present
+    session_id = request.headers.get("X-Tab-Session")
+    if not session_id:
+        session_id = str(uuid.uuid4())
+    
     return EventSourceResponse(
-        event_generator(user_prompt),
+        event_generator(user_prompt, session_id),
         media_type="text/event-stream"
     )
 

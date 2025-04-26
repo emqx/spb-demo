@@ -52,7 +52,9 @@ class DB:
         return result.to_dict(orient="records")
     
     def query_tag_range(self, device: str, tag: str, start: str, end: str) -> list[dict]:
-        result = self.datalayers.execute(f"SELECT * FROM tags WHERE device = '{device}' AND tag = '{tag}' AND ts > '{start}' AND ts < '{end}'")
+        sql = f"SELECT * FROM tags WHERE device = '{device}' AND tag = '{tag}' AND ts > '{start}' AND ts < '{end}'"
+        logging.info(f"SQL: {sql}")
+        result = self.datalayers.execute(sql)
         return result.to_dict(orient="records")
     
     def update_device_status(self, time: Timestamp, device: str, status: str):
