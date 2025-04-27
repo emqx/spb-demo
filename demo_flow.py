@@ -126,18 +126,13 @@ class DemoFlow(Workflow):
         
     @step
     async def process_rag(self, ctx: Context, ev: RAGEvent) -> ToolExecResultEvent:
-        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="You're an IIoT data analysis expert, and familar with SparkplugB specification. You task is to create different kinds of report that can help onsite engineers to understand the device status."))
-        self.memory.put(ChatMessage(role=MessageRole.USER, content="Generate an IIoT report based on returned result input."))
         chat_history = self.memory.get()
-        # print(chat_history)
 
-        response = ""
-        handle = await self.llm.astream_chat(chat_history)
-        async for token in handle:
-            cprint(token.delta)
-            ctx.write_event_to_stream(ProgressEvent(msg=token.delta))
-            response += token.delta
-        return ToolExecResultEvent(result=response)
+        response = self.search_documents(ev.result)
+        if response == "":
+            return ToolExecResultEvent(result=ev.result)
+        else:
+            return ToolExecResultEvent(result=response)
 
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:
