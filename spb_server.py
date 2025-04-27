@@ -69,6 +69,24 @@ async def get_device_status_range(device: str, start: str, end: str) -> str:
         result += f"{s['status']} {s['time']}\n"
     return result
 
+
+@mcp.tool()
+async def get_device_status_by_sql_count(sql) -> int:
+    """
+    Query device status number from devices table with specified condition. This fucntion is used for determining if need to use the time windows to decrease the returned records. 
+    
+    Please refer to the description of `get_device_status_by_sql` function for the sample SQLs.
+    Please use `COUNT(*) AS rec_count` for determining the count of retured records. 
+    """
+
+    logging.info(f"Getting device status record number by sql {sql}")
+    results = spb.datalayer_execute_sql(sql)
+    if not results:
+        logging.info("No results found")
+        return 0
+    else:
+        return results[0]['rec_count']
+
 @mcp.tool()
 async def get_device_status_by_sql(sql: str) -> str:
     """Query device status info from devices table.
@@ -92,6 +110,14 @@ async def get_device_status_by_sql(sql: str) -> str:
             e.g. query specific device status with time range and status: SELECT * FROM devices WHERE device = 'device_name' AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND status = 'online';
             e.g. query modbus device status: SELECT * FROM devices WHERE device = 'modbus';
             e.g. query specific device latest status: SELECT * FROM devices WHERE device = 'device_name' ORDER BY ts DESC LIMIT 1;
+
+            Use `date_bin(INTERVAL, expression[, origin-timestamp])` to leverage time windows to decrease the number of returned records. The date_bin function truncates the expression based on the input interval time unit. 
+            It allows specifying an origin-timestamp as the starting point, which defaults to the UNIX epoch (1970-01-01 00:00:00 UTC) if not provided. 
+            For example: date_bin('interval 1 hour', ts) aligns timestamps into 1-hour bins starting from the origin. 
+            INTERVAL is string similar to '2 hour', the available time units: 'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
+            For exmaple, with below SQL, it queries the device table and calculates the aggregated value.
+            To get aggregated online status: `SELECT date_bin('1 hour', ts) AS timepoint, count(*) AS status FROM devices WHERE status="online" GROUP BY timepoint ORDER BY timepoint;`
+            To get aggregated offline status: `SELECT date_bin('1 hour', ts) AS timepoint, count(*) AS status FROM devices WHERE status="offline" GROUP BY timepoint ORDER BY timepoint;`
     """
     logging.info(f"Getting device status by sql: {sql}")
     results  = spb.datalayer_execute_sql(sql)
@@ -101,9 +127,10 @@ async def get_device_status_by_sql(sql: str) -> str:
 
     status = []
     for result in results:
+        timestamp = result.get('timepoint', result.get('ts'))
         status.append({
             "status": result['status'],
-            "time": spb.timestamp_to_str(result['ts'])
+            "time": spb.timestamp_to_str(timestamp)
         })
     return status
 
@@ -137,14 +164,34 @@ async def get_device_tag_history(device: str, tag: str, start: str, end: str) ->
     return result
 
 @mcp.tool()
+async def get_device_tag_history_by_sql_count(sql) -> int:
+    """
+    Query device tag history number from tags table with specified condition. This fucntion is used for determining if need to use the time windows to decrease the returned records. 
+    
+    Please refer to the description of `get_device_tag_history_by_sql` function for the sample SQLs.
+    Please use `COUNT(*) AS rec_count` for determining the count of retured records. 
+    """
+
+    logging.info(f"Getting device tag history record number by sql {sql}")
+    results = spb.datalayer_execute_sql(sql)
+    if not results:
+        logging.info("No results found")
+        return 0
+    else:
+        return results[0]['rec_count']
+
+@mcp.tool()
 async def get_device_tag_history_by_sql(sql) -> str:
 	"""Query device tag history value from tags table.
+    
+    Important: If there are too many of returned record, it will exceed the max context token of LLM. So please use `get_device_tag_history_count` function to get the returned number of records. 
+    If the return number is larger than 300, then use `date_bin` function, and choose right aggregated time unit to return the records that close to 300. 
 
 	tags table schema:
 		ts: timestamp, timezone is UTC+0
-		tag: tag name
-		device: device name
-		value: tag value
+		tag: tag name  (string type)
+		device: device name  (string type)
+		value: tag value (string type)
 
 	Args:
 		sql: SQL query, format: SELECT * FROM tags [WHERE device = 'device_name'] [AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800'] [AND tag = 'tag_name']; 
@@ -155,6 +202,14 @@ async def get_device_tag_history_by_sql(sql) -> str:
 			e.g. query all tags history with tag name: SELECT * FROM tags WHERE tag = 'tag_name';
 			e.g. query all tags history with time range and tag name: SELECT * FROM tags WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag = 'tag_name';
 			e.g. query specific device tag history with time range and tag name: SELECT * FROM tags WHERE device = 'device_name' AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag = 'tag_name';
+
+            Use `date_bin(INTERVAL, expression[, origin-timestamp])` to leverage time windows to decrease the number of returned records. The date_bin function truncates the expression based on the input interval time unit. 
+            It allows specifying an origin-timestamp as the starting point, which defaults to the UNIX epoch (1970-01-01 00:00:00 UTC) if not provided. 
+            For example: date_bin('interval 1 hour', ts) aligns timestamps into 1-hour bins starting from the origin. 
+            INTERVAL is string similar to '2 hour', the available time units: 'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
+            For exmaple, with below SQL, it queries the tags table and calculates average value as returned value in 1 hour, so reduced the number of record to 1 for every 1 hour.
+            `SELECT date_bin('1 hour', ts) AS timepoint, avg(CAST(value AS FLOAT)) AS value FROM tags WHERE where_expression GROUP BY timepoint ORDER BY timepoint;`
+
 	"""
 	logging.info(f"Getting device tag history by sql {sql}")
 	results = spb.datalayer_execute_sql(sql)
@@ -164,8 +219,10 @@ async def get_device_tag_history_by_sql(sql) -> str:
 
 	history = []
 	for result in results:
+		# Check for timepoint first (from date_bin queries), fall back to ts if not found
+		timestamp = result.get('timepoint', result.get('ts'))
 		history.append({
-			"time": spb.timestamp_to_str(result['ts']),
+			"time": spb.timestamp_to_str(timestamp),
 			"value": result['value']
 		})
 	return history

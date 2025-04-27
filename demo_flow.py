@@ -1,6 +1,7 @@
 import os
 from typing import Any, Union
 import logging
+import traceback
 
 from llama_index.core.workflow import (
     Event,
@@ -18,8 +19,7 @@ from llama_index.llms.openai_like import OpenAILike
 from llama_index.llms.siliconflow import SiliconFlow
 
 from llama_mcp import BasicMCPClient, McpToolSpec
-import json
-
+from util import load_system_prompt,load_json_prompt
 from db.rag import RAG
 
 
@@ -85,25 +85,27 @@ class DemoFlow(Workflow):
 
     @step
     async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ToolExecResultEvent | StopEvent]:
-        all_tools = await init_mcp_server()
-        tools_name = [tool.metadata.name for tool in all_tools]
-
-        # Add event showing available tools
+        self.all_tools = await init_mcp_server()
+        tools_name = [tool.metadata.name for tool in self.all_tools]
+        # # Add event showing available tools
         ctx.write_event_to_stream(ProgressEvent(msg=f"Available tools: {tools_name}\n\n"))
-
-        system_prompt="You have a set of tools to extract the useful information from external database system, which stores related Sparkplug data. You task is to use the tools extract the right information for user's input."
+        self.all_tools.append(self.search_documents)
+        
+        system_prompt=load_system_prompt(prompt_filename="system.txt", lang="zh")
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM,content=system_prompt))
 
-        all_tools.append(self.search_documents)
         query_info = AgentWorkflow.from_tools_or_functions(
-            tools_or_functions=all_tools,
+            tools_or_functions=self.all_tools,
             llm=self.llm,
             system_prompt=system_prompt,
             verbose=False,
             timeout=180,
             )
         
-        handler = query_info.run(user_msg=f'{ev.user_input}. Notice: NEVER surround your response with markdown code markers.')
+        json_prompts = load_json_prompt("data_analysis.json", "zh")
+        user_prompt = json_prompts["pre_analyze"].format(ev=ev)
+        handler = query_info.run(user_msg=f'{user_prompt}. \n\n')
+
         response = ""
         async for event in handler.stream_events():
             if isinstance(event, AgentStream):
@@ -113,44 +115,43 @@ class DemoFlow(Workflow):
             elif isinstance(event, ToolCallResult):
                 ctx.write_event_to_stream(ProgressEvent(msg=f'{event.tool_name}: {event.tool_kwargs}\n\n'))
                 ctx.write_event_to_stream(ProgressEvent(msg=f'{event.tool_output}\n'))
-                # Add tool invocation and result to memory
-                # self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=f"I am using the tool '{event.tool_name}' with parameters: {event.tool_kwargs}"))
-                # self.memory.put(ChatMessage(role=MessageRole.TOOL, content=f"Tool output: {event.tool_output}"))
-            # elif isinstance(event, ToolCallResult):
-            #     print(event.tool_output, end="\n", flush=True)
 
-        
-        self.memory.put(ChatMessage(role=MessageRole.ASSISTANT, content=response))
+        self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
         return ToolExecResultEvent(result=response)
         
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:
-        self.memory.put(ChatMessage(role=MessageRole.SYSTEM, content="You're an IIoT data analysis expert, and familar with SparkplugB specification. You task is to create different kinds of report that can help onsite engineers to understand the device status."))
-        self.memory.put(ChatMessage(role=MessageRole.USER, content="Generate an IIoT report based on returned result input."))
+        user_prompt = load_json_prompt("data_analysis.json", "zh")["gen_report"]
+        self.memory.put(ChatMessage(role=MessageRole.USER, content=user_prompt))
         chat_history = self.memory.get()
-        # print(chat_history)
 
         response = ""
         handle = await self.llm.astream_chat(chat_history)
         async for token in handle:
-            cprint(token.delta)
+            # cprint(token.delta)
             ctx.write_event_to_stream(ProgressEvent(msg=token.delta))
             response += token.delta
         return StopEvent(result=response)
 
 
 async def main():
-    llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"),model=os.getenv("MODEL_NAME"),temperature=0.2,max_tokens=4000, timeout=180)
-    w = DemoFlow(timeout=None, llm=llm, verbose=True)
-    ctx = Context(w)
+    try:
+        llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"),model=os.getenv("MODEL_NAME"),temperature=0.2,max_tokens=4000, timeout=180)
+        w = DemoFlow(timeout=None, llm=llm, verbose=True)
+        ctx = Context(w)
 
-    user_prompt = '''查询过去一周设备 test 的离线情况'''
-    handler = w.run(user_input=user_prompt, ctx=ctx)
+        user_prompt = '''分析过去一周设备 test 的上线情况'''
+        handler = w.run(user_input=user_prompt, ctx=ctx)
 
-    async for ev in handler.stream_events():
-        if isinstance(ev, ProgressEvent):
-           cprint(ev.msg)
-    await handler
+        async for ev in handler.stream_events():
+            if isinstance(ev, ProgressEvent):
+               cprint(ev.msg)
+        await handler
+    except Exception as e:
+        cprint(f"An error occurred: {str(e)}\n")
+        cprint("Full stack trace:\n")
+        cprint(traceback.format_exc())
+        raise
 
 if __name__ == "__main__":
     import asyncio
