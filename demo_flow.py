@@ -89,12 +89,11 @@ class DemoFlow(Workflow):
         return str(response)
 
     @step
-    async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ToolExecResultEvent | StopEvent]:
+    async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ RAGEvent | StopEvent]:
         self.all_tools = await init_mcp_server()
         tools_name = [tool.metadata.name for tool in self.all_tools]
         # # Add event showing available tools
         ctx.write_event_to_stream(ProgressEvent(msg=f"Available tools: {tools_name}\n\n"))
-        self.all_tools.append(self.search_documents)
         
         system_prompt=load_system_prompt(prompt_filename="system.txt", lang="zh")
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM,content=system_prompt))
@@ -122,17 +121,14 @@ class DemoFlow(Workflow):
                 ctx.write_event_to_stream(ProgressEvent(msg=f'{event.tool_output}\n'))
 
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
-        return ToolExecResultEvent(result=response)
+        return RAGEvent(result=response)
         
     @step
     async def process_rag(self, ctx: Context, ev: RAGEvent) -> ToolExecResultEvent:
         chat_history = self.memory.get()
 
         response = self.search_documents(ev.result)
-        if response == "":
-            return ToolExecResultEvent(result=ev.result)
-        else:
-            return ToolExecResultEvent(result=response)
+        return ToolExecResultEvent(result=response)
 
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:

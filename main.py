@@ -40,9 +40,9 @@ llm = SiliconFlow(
 
 rag = RAG()
 try:
-    rag.load_index()
+    rag.load_index_from_docx()
 except Exception as e:
-    rag.create_index() # Create index for the first time
+    rag.create_from_docx()
 
 # llm = DeepSeek(model=os.getenv("DS_MODEL_NAME"), api_key=os.getenv("DS_API_KEY"),temperature=0.6,max_tokens=6000)
 
