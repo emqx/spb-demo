@@ -100,6 +100,7 @@
             min-height: 56px;
             background-color: white;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            margin-top: 40px;
         }
 
         #submitBtn {
@@ -187,6 +188,25 @@
             color: #64748b;
             margin-bottom: 0.5rem;
         }
+
+        .new-conversation-btn {
+            position: absolute;
+            right:0;
+           
+            background-color: white;
+            color: var(--primary-color);
+            border: 1px solid var(--border-color);
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .new-conversation-btn:hover {
+            background-color: var(--primary-color);
+            color: white;
+        }
     </style>
 </head>
 
@@ -198,7 +218,9 @@
         </div>
 
         <div class="input-container">
+            
             <div class="input-wrapper">
+                <button id="newConversationBtn" class="new-conversation-btn">New conversation</button>
                 <textarea id="promptInput"
                     placeholder="Type your query here... (Press Enter to submit, Shift+Enter for new line)"
                     rows="1"></textarea>
@@ -230,7 +252,7 @@
 
         // Generate a unique session ID for this tab
         //const tabSessionId = crypto.randomUUID();
-        const tabSessionId = generateUUID();
+        let tabSessionId = generateUUID();
 
 
         // Function to get cookie by name
@@ -368,6 +390,14 @@
 
         // Event Listeners
         submitBtn.addEventListener('click', submitQuery);
+
+        document.getElementById('newConversationBtn').addEventListener('click', () => {
+            chatMessages.innerHTML = '';
+            promptInput.value = '';
+            adjustTextareaHeight();
+            tabSessionId = generateUUID();
+            updateSessionInfo();
+        });
 
         promptInput.addEventListener('input', adjustTextareaHeight);
 
