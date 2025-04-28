@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -136,8 +137,13 @@
         }
 
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            0% {
+                transform: rotate(0deg);
+            }
+
+            100% {
+                transform: rotate(360deg);
+            }
         }
 
         /* Markdown Styles */
@@ -183,23 +189,22 @@
         }
     </style>
 </head>
+
 <body>
     <div class="chat-container">
         <div class="session-info" id="sessionInfo">Session: Initializing...</div>
         <div class="chat-messages" id="chatMessages">
             <!-- Messages will be added here -->
         </div>
-        
+
         <div class="input-container">
             <div class="input-wrapper">
-                <textarea 
-                    id="promptInput" 
+                <textarea id="promptInput"
                     placeholder="Type your query here... (Press Enter to submit, Shift+Enter for new line)"
-                    rows="1"
-                ></textarea>
+                    rows="1"></textarea>
                 <button id="submitBtn">
                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9" stroke="white"/>
+                        <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9" stroke="white" />
                     </svg>
                 </button>
                 <div class="loading">
@@ -215,9 +220,18 @@
         const chatMessages = document.getElementById('chatMessages');
         const loadingDiv = document.querySelector('.loading');
         const sessionInfo = document.getElementById('sessionInfo');
+        function generateUUID() {
+            return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+                const r = Math.random() * 16 | 0;
+                const v = c === 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+        }
 
         // Generate a unique session ID for this tab
-        const tabSessionId = crypto.randomUUID();
+        //const tabSessionId = crypto.randomUUID();
+        const tabSessionId = generateUUID();
+
 
         // Function to get cookie by name
         function getCookie(name) {
@@ -244,15 +258,15 @@
         function addMessage(content, isUser = false) {
             const messageDiv = document.createElement('div');
             messageDiv.className = `message ${isUser ? 'user-message' : 'assistant-message'}`;
-            
+
             const roleLabel = document.createElement('div');
             roleLabel.className = 'role-label';
             roleLabel.textContent = isUser ? 'You' : 'Assistant';
-            
+
             const contentDiv = document.createElement('div');
             contentDiv.className = 'message-content';
             contentDiv.innerHTML = isUser ? content : marked.parse(content);
-            
+
             messageDiv.appendChild(roleLabel);
             messageDiv.appendChild(contentDiv);
             chatMessages.appendChild(messageDiv);
@@ -265,7 +279,7 @@
 
             // Add user message
             addMessage(prompt, true);
-            
+
             // Clear input and adjust height
             promptInput.value = '';
             adjustTextareaHeight();
@@ -290,14 +304,14 @@
                 // Create initial assistant message container
                 const messageDiv = document.createElement('div');
                 messageDiv.className = 'message assistant-message';
-                
+
                 const roleLabel = document.createElement('div');
                 roleLabel.className = 'role-label';
                 roleLabel.textContent = 'Assistant';
-                
+
                 const contentDiv = document.createElement('div');
                 contentDiv.className = 'message-content';
-                
+
                 messageDiv.appendChild(roleLabel);
                 messageDiv.appendChild(contentDiv);
                 chatMessages.appendChild(messageDiv);
@@ -308,11 +322,11 @@
                 while (true) {
                     const { value, done } = await reader.read();
                     if (done) break;
-                    
+
                     const text = decoder.decode(value);
                     console.debug(text)
                     const lines = text.split('\n');
-                    
+
                     for (const line of lines) {
                         if (line.startsWith('data:')) {
                             console.log(line)
@@ -328,7 +342,7 @@
                                     } else {
                                         console.warn("Received data object without 'content' key:", jsonData);
                                     }
-                                    
+
                                 } catch (e) {
                                     console.error("Failed to parse JSON data:", dataString, e);
                                     // Optionally, display the raw string or an error indicator
@@ -368,4 +382,5 @@
         promptInput.focus();
     </script>
 </body>
-</html> 
+
+</html>

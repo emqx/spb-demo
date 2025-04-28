@@ -36,6 +36,9 @@ class ProgressEvent(Event):
 class ToolExecResultEvent(Event):
     result: str
 
+class RAGEvent(Event):
+    result: str
+
 async def init_mcp_server():
     project_path = os.path.abspath(os.path.dirname(__file__))
     servers = [ 
@@ -59,6 +62,7 @@ class DemoFlow(Workflow):
     def __init__(
             self,
             llm: OpenAILike,
+            rag: RAG,
             memory: ChatMemoryBuffer = None,
             *args,
             **kwargs):
@@ -68,11 +72,12 @@ class DemoFlow(Workflow):
         self.memory = memory
         self.client = None
         self.llm = llm
-        self.rag = RAG()
-        try:
-            self.rag.load_index()
-        except Exception as e:
-            self.rag.create_index() # Create index for the first time
+        self.rag = rag
+        #self.rag.create_index() # Create index for the first time
+        #try:
+            #self.rag.load_index()
+        #except Exception as e:
+            #self.rag.create_index() # Create index for the first time
             
         super().__init__(*args, **kwargs)
     
@@ -119,6 +124,16 @@ class DemoFlow(Workflow):
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
         return ToolExecResultEvent(result=response)
         
+    @step
+    async def process_rag(self, ctx: Context, ev: RAGEvent) -> ToolExecResultEvent:
+        chat_history = self.memory.get()
+
+        response = self.search_documents(ev.result)
+        if response == "":
+            return ToolExecResultEvent(result=ev.result)
+        else:
+            return ToolExecResultEvent(result=response)
+
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:
         user_prompt = load_json_prompt("data_analysis.json", "zh")["gen_report"]
