@@ -1,6 +1,7 @@
 import os
 import logging
 import time
+import signal
 
 from mcp.server.fastmcp import FastMCP
 from dotenv import load_dotenv
@@ -24,20 +25,6 @@ async def get_current_time() -> str:
     """
     logging.info("Getting current time")
     return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
-
-@mcp.tool()
-async def get_device_by_alias(alias: str) -> str:
-    """Get device name by alias.
-
-    Args:
-        alias: Device alias.
-    """
-    logging.info(f"Getting device by alias: {alias}")
-    device = spb.query_device_by_alias(alias)
-    if device:
-        return device
-    else:
-        return "Device not found"
 
 @mcp.tool()
 async def get_device_all_status(device: str) -> str:
@@ -260,18 +247,25 @@ def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlett
 if __name__ == "__main__":
     import time
     import uvicorn
+    
+    def signal_handler(sig, frame):
+        logging.info("Shutting down...")
+        spb.stop()
+        logging.warning("SparkPlugB mcp server stopped")
+        exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    
     logging.info("Starting SparkPlugB mcp server...")
 
     if not spb.connect():
         exit(1)
-    #mcp.run(transport="stdio")
+        
     starlette_app = create_starlette_app(mcp._mcp_server, debug=True)
     uvicorn.run(starlette_app, host="0.0.0.0", port=8081)
 
     try:
         while True:
             time.sleep(1)
-    except KeyboardInterrupt:
-        logging.info("Shutting down...")
-        spb.stop()
-        logging.warning("SparkPlugB mcp server stopped")
+    except:
+        signal_handler(None, None)

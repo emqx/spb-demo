@@ -2,6 +2,9 @@ from dotenv import load_dotenv
 
 from mcp.server.fastmcp import FastMCP
 from db.mariadb import Client
+import os
+import logging
+
 
 load_dotenv()
 
