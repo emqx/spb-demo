@@ -13,6 +13,7 @@ import json
 
 from demo_flow import DemoFlow, Context, ProgressEvent
 from session_store import SessionStore
+from db.rag import RAG
 
 project_path = os.path.abspath(os.path.dirname(__file__))
 logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "logs/mcp_service.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
@@ -37,6 +38,12 @@ llm = SiliconFlow(
     timeout=180
 )
 
+rag = RAG()
+try:
+    rag.load_index()
+except Exception as e:
+    rag.create_index() # Create index for the first time
+
 # llm = DeepSeek(model=os.getenv("DS_MODEL_NAME"), api_key=os.getenv("DS_API_KEY"),temperature=0.6,max_tokens=6000)
 
 async def event_generator(prompt: str, session_id: str):
@@ -46,7 +53,7 @@ async def event_generator(prompt: str, session_id: str):
         print(memory.get())
     
     # Initialize the LLM and workflow
-    workflow = DemoFlow(timeout=None, llm=llm, verbose=True, memory=memory)
+    workflow = DemoFlow(timeout=None, llm=llm, rag=rag, verbose=True, memory=memory)
     ctx = Context(workflow)
 
     # Run the workflow
