@@ -2,6 +2,8 @@ import os
 import time
 from dotenv import load_dotenv
 import logging
+from pathlib import Path
+from tempfile import mkdtemp
 
 from llama_index.core import SimpleDirectoryReader,StorageContext,VectorStoreIndex,Settings, load_index_from_storage
 from llama_index.llms.siliconflow import SiliconFlow
@@ -9,6 +11,11 @@ from llama_index.embeddings.huggingface import HuggingFaceEmbedding
 from llama_index.vector_stores.postgres import PGVectorStore
 
 from ali_embedding import AliEmbeddings
+
+from llama_index.core import StorageContext, VectorStoreIndex
+from llama_index.core.node_parser import MarkdownNodeParser
+from llama_index.readers.docling import DoclingReader
+from llama_index.vector_stores.milvus import MilvusVectorStore
 
 load_dotenv()
 Settings.llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"),model=str(os.getenv("MODEL_NAME")),temperature=0,max_tokens=4000, timeout=180)
@@ -44,6 +51,41 @@ class RAG:
             logging.info("Using local VectorStore")
         self.engine = None
         self.__index = None
+    
+
+    def create_from_docx(self):
+        start_time = time.time()
+        reader = DoclingReader()
+        node_parser = MarkdownNodeParser()
+        vector_store = MilvusVectorStore(uri="./storage/docling.db", dim=self.__dimension, overwrite=True)
+        if self.use_pg:
+            vector_store = self.__create_pg_store(dimension=self.__dimension)
+        index = VectorStoreIndex.from_documents(
+            documents=reader.load_data("./data/3HAC066553-001_20250426182528.docx"),
+            transformations=[node_parser],
+            storage_context=StorageContext.from_defaults(vector_store=vector_store),
+            embed_model=Settings.embed_model,
+            show_progress=True,
+        )
+        self.__store = vector_store
+        self.__index = index
+        self.engine = self.__index.as_query_engine()
+        end_time = time.time()
+        logging.info(f"docx index created in {end_time - start_time:.2f} seconds")
+    
+    def load_index_from_docx(self):
+        start_time = time.time()
+        reader = DoclingReader()
+        node_parser = MarkdownNodeParser()
+        vector_store = MilvusVectorStore(uri="./storage/docling.db", dim=self.__dimension)
+        if self.use_pg:
+            vector_store = self.__create_pg_store(dimension=self.__dimension)
+        index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=Settings.embed_model)
+        self.__store = vector_store
+        self.__index = index
+        self.engine = self.__index.as_query_engine()
+        end_time = time.time()
+        logging.info(f"docx index loaded in {end_time - start_time:.2f} seconds")
     
     def create_index(self):
         start_time = time.time()
@@ -124,11 +166,13 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "../logs/rag.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
     load_dotenv()
     rag = RAG()
-    #rag.create_index()
-    rag.load_index()
+    #rag.create_from_docx()
+    rag.load_index_from_docx()
+    #rag.load_index()
     start_time = time.time()
     #response = rag.query("What did the author do in college?")
-    response = rag.query("What i worked?")
+    response = rag.query("what does 50153 mead?")
     end_time = time.time()
     logging.info(f"Query time: {end_time - start_time:.2f} seconds")
-    print(response)
+    logging.info(response.response.strip())
+    logging.info([(n.text, n.metadata) for n in response.source_nodes])
