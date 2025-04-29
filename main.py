@@ -40,9 +40,9 @@ llm = SiliconFlow(
 
 rag = RAG()
 try:
-    rag.load_index_from_hybrid_chunks("./storage/zh_index.db")
+    rag.load_index_from_hybrid_chunks()
 except Exception as e:
-    rag.create_index_from_hybrid_chunks("./data/3HAC066553-010_20250426183500.md", "./storage/zh_index.db")
+    rag.create_index_from_hybrid_chunks("./data/3HAC066553-010_20250426183500.md")
 
 # llm = DeepSeek(model=os.getenv("DS_MODEL_NAME"), api_key=os.getenv("DS_API_KEY"),temperature=0.6,max_tokens=6000)
 
