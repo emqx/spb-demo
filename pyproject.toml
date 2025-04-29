@@ -28,4 +28,5 @@ dependencies = [
 	"llama-index-readers-docling>=0.3.2",
 	"llama-index-vector-stores-milvus>=0.8.1",
 	"tdqm>=0.0.1",
+	"transformers>=4.42.4",
 ]
