@@ -141,7 +141,8 @@ class DemoFlow(Workflow):
 
         ctx.write_event_to_stream(ProgressEvent(msg="\n\n"))            
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
-        # response = self.search_documents(ev.result)
+        response = self.search_documents(response)
+        self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
         return ToolExecResultEvent(result=ev.result)
 
     @step
