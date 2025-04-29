@@ -50,68 +50,6 @@ class RAG:
             self.use_pg = False
             logging.info("Using local VectorStore")
         self.engine = None
-        self.__index = None
-    
-
-    def create_from_docx(self):
-        start_time = time.time()
-        reader = DoclingReader()
-        node_parser = MarkdownNodeParser()
-        vector_store = MilvusVectorStore(uri="./storage/docling.db", dim=self.__dimension, overwrite=True)
-        if self.use_pg:
-            vector_store = self.__create_pg_store(dimension=self.__dimension)
-        index = VectorStoreIndex.from_documents(
-            documents=reader.load_data("./data/3HAC066553-001_20250426182528.docx"),
-            transformations=[node_parser],
-            storage_context=StorageContext.from_defaults(vector_store=vector_store),
-            embed_model=Settings.embed_model,
-            show_progress=True,
-        )
-        self.__store = vector_store
-        self.__index = index
-        self.engine = self.__index.as_query_engine()
-        end_time = time.time()
-        logging.info(f"docx index created in {end_time - start_time:.2f} seconds")
-    
-    def load_index_from_docx(self):
-        start_time = time.time()
-        reader = DoclingReader()
-        node_parser = MarkdownNodeParser()
-        vector_store = MilvusVectorStore(uri="./storage/docling.db", dim=self.__dimension)
-        if self.use_pg:
-            vector_store = self.__create_pg_store(dimension=self.__dimension)
-        index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=Settings.embed_model)
-        self.__store = vector_store
-        self.__index = index
-        self.engine = self.__index.as_query_engine()
-        end_time = time.time()
-        logging.info(f"docx index loaded in {end_time - start_time:.2f} seconds")
-    
-    def create_index(self):
-        start_time = time.time()
-        if self.use_pg:
-            index = RAG.create_index_pg(self.__dimension)
-            self.__store = self.__create_pg_store(dimension=self.__dimension)
-            self.__index = index
-        else:
-            index = RAG.create_index_local()
-            self.__store = index.storage_context.vector_store;
-            self.__index = index
-        self.engine = self.__index.as_query_engine()
-        end_time = time.time()
-        logging.info(f"Index created in {end_time - start_time:.2f} seconds, {self.use_pg}")
-    
-    def load_index(self):
-        if self.use_pg:
-            self.__store = self.__create_pg_store(dimension=self.__dimension)
-            self.__index = VectorStoreIndex.from_vector_store(vector_store=self.__store, embed_model=Settings.embed_model)
-        else:
-            self.__store = StorageContext.from_defaults(persist_dir="./storage")
-            self.__index = load_index_from_storage(self.__store)
-        start_time = time.time()
-        self.engine = self.__index.as_query_engine()
-        end_time = time.time()
-        logging.info(f"Index loaded in {end_time - start_time:.2f} seconds")
     
     @staticmethod
     def __create_pg_store(dimension: int) -> PGVectorStore:
@@ -137,42 +75,64 @@ class RAG:
         )
         return vector_store
     
-    @staticmethod
-    def create_index_local() -> VectorStoreIndex:
-        documents = SimpleDirectoryReader("./data").load_data()
-        index = VectorStoreIndex.from_documents(documents)
-        index.storage_context.persist(persist_dir="./storage")
-        return index
+    def create_index_from_hybrid_chunks(self, path: str, store_uri: str):
+        start_time = time.time()
+        from docling.document_converter import DocumentConverter
+        from docling.chunking import HybridChunker
+        from llama_index.core.schema import Document
+
+        doc = DocumentConverter().convert(path).document
+
+        chunker = HybridChunker(max_tokens=500)
+        chunks = list(chunker.chunk(dl_doc=doc))
+
+        documents = [
+            Document(
+                text=chunk.meta.headings[0] + ': ' + chunk.text,
+                metadata={
+                    "headings": chunk.meta.headings,
+                },
+            ) for chunk in chunks
+        ]
+        vector_store = MilvusVectorStore(uri=store_uri, dim=self.__dimension, overwrite=True)
+        if self.use_pg:
+            vector_store = self.__create_pg_store(dimension=self.__dimension)
+        index = VectorStoreIndex.from_documents(
+            documents=documents,
+            storage_context=StorageContext.from_defaults(vector_store=vector_store),
+            embed_model=Settings.embed_model,
+            show_progress=True,
+        )
+        self.engine = index.as_query_engine()
+        end_time = time.time()
+        logging.info(f"Index created from hybrid chunks in {end_time - start_time:.2f} seconds")
     
-    @staticmethod
-    def create_index_pg(dim: int) -> VectorStoreIndex:
-        local_embedding = os.getenv('EMBEDDING_LOCAL', True)
-        dim = 1024
-        if local_embedding:
-            dim = 768
-        else:
-            dim = 1024
-        storage_context = StorageContext.from_defaults(vector_store=RAG.__create_pg_store(dimension=dim))
-
-        documents = SimpleDirectoryReader("./data").load_data()
-        return VectorStoreIndex(documents, embed_model=Settings.embed_model, storage_context=storage_context, show_progress=True)
-
+    def load_index_from_hybrid_chunks(self, store_uri: str):
+        start_time = time.time()
+        vector_store = MilvusVectorStore(uri=store_uri, dim=self.__dimension)
+        if self.use_pg:
+            vector_store = self.__create_pg_store(dimension=self.__dimension)
+        index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=Settings.embed_model)
+        self.engine = index.as_query_engine()
+        end_time = time.time()
+        logging.info(f"Index loaded from hybrid chunks in {end_time - start_time:.2f} seconds")
+    
     def query(self, query: str):
         response = self.engine.query(query)
         return response
-
+    
 if __name__ == "__main__":
     project_path = os.path.abspath(os.path.dirname(__file__))
     logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "../logs/rag.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
     load_dotenv()
     rag = RAG()
-    #rag.create_from_docx()
-    rag.load_index_from_docx()
-    #rag.load_index()
+    #rag.create_index_from_hybrid_chunks()
+    rag.load_index_from_hybrid_chunks("./storage/zh_index.db")
     start_time = time.time()
-    #response = rag.query("What did the author do in college?")
-    response = rag.query("what does 50153 mead?")
+    response = rag.query("解释 50156")
     end_time = time.time()
     logging.info(f"Query time: {end_time - start_time:.2f} seconds")
     logging.info(response.response.strip())
-    logging.info([(n.text, n.metadata) for n in response.source_nodes])
+
+
+

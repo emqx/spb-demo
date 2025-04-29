@@ -186,4 +186,3 @@ wheels/
 
 logs/*.log
 storage/*.json
-uv.lock
