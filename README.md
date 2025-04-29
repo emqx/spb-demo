@@ -21,16 +21,16 @@ uv venv
 ## EMQX Enterprise 5.6.x
 Install EMQX Enterprise 5.6.x and start it.
 
-## NeuronEX   >= 3.5.1
+## NeuronEX >= 3.5.1
 Install NeuronEX and create related devices. 
 
 - You can create the device and tag configurations as in below.
 
 ```
-test
-├── group1
-│   └── t1
-└── group2
+demo
+├── diagnose
+│   └── error_code
+└── robotic_arm
     ├── voltage
     └── amper
 ```
@@ -95,19 +95,12 @@ Create a table in MariaDB to store the OT & IT mapping. For example, we have a t
 ```sql
 CREATE DATABASE demo;
 USE demo;
-CREATE TABLE device_alias (
-     id INT AUTO_INCREMENT PRIMARY KEY,
-     device VARCHAR(255) NOT NULL,
-     alias VARCHAR(255) NOT NULL,
-     UNIQUE KEY (device, alias)
-);
 CREATE TABLE ot_it_mapping (
     ot_id VARCHAR(50) PRIMARY KEY,
     it_alias VARCHAR(100) NOT NULL
 );
 
 -- Insert the example data
-INSERT INTO device_alias (device, alias) VALUES ('modbus', '温度传感器');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('factory_1', 'LA factory');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('assembly_1', 'Big boy');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('test', 'Bee');  
@@ -157,6 +150,9 @@ Copy `.env.example` to `.env` and modify the values accordingly.
 - Type questions in the chatbox.
 
 **Demo scenario**
+- 分析过去一天设备 demo 的 diagnose/error_code 点位数据
+- 分析过去一周设备 demo 的 robotic_arm/voltage 点位数据
+
 - 查询过去一周节点 assembly_1 的离线情况 
   - Query the offline status of assembly_1 of last week.
 

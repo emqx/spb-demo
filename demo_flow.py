@@ -135,15 +135,16 @@ class DemoFlow(Workflow):
         response = ""
         handle = await self.llm.astream_chat(chat_history)
         async for token in handle:
-            # cprint(token.delta)
+            cprint(token.delta)
             ctx.write_event_to_stream(ProgressEvent(msg=token.delta))
             response += token.delta
 
         ctx.write_event_to_stream(ProgressEvent(msg="\n\n"))            
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
         response = self.search_documents(response)
+        cprint(response)
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
-        return ToolExecResultEvent(result=ev.result)
+        return ToolExecResultEvent(result="")
 
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:
