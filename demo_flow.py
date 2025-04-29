@@ -95,7 +95,7 @@ class DemoFlow(Workflow):
         # # Add event showing available tools
         ctx.write_event_to_stream(ProgressEvent(msg=f"Available tools: {tools_name}\n\n"))
         
-        system_prompt=load_system_prompt(prompt_filename="system.txt", lang="zh")
+        system_prompt=load_system_prompt(prompt_filename="system.txt", lang="zh").format(ev=ev)
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM,content=system_prompt))
 
         query_info = AgentWorkflow.from_tools_or_functions(
@@ -108,6 +108,8 @@ class DemoFlow(Workflow):
         
         json_prompts = load_json_prompt("data_analysis.json", "zh")
         user_prompt = json_prompts["pre_analyze"].format(ev=ev)
+        self.memory.put(ChatMessage(role=MessageRole.USER,content=user_prompt))
+
         handler = query_info.run(user_msg=f'{user_prompt}. \n\n')
 
         response = ""
@@ -125,10 +127,22 @@ class DemoFlow(Workflow):
         
     @step
     async def process_rag(self, ctx: Context, ev: RAGEvent) -> ToolExecResultEvent:
+        json_prompts = load_json_prompt("data_analysis.json", "zh")
+        user_prompt = f'{ev.result} \n\n {json_prompts["extract_diagnose"]}'
+        self.memory.put(ChatMessage(role=MessageRole.USER,content=user_prompt))
         chat_history = self.memory.get()
 
-        response = self.search_documents(ev.result)
-        return ToolExecResultEvent(result=response)
+        response = ""
+        handle = await self.llm.astream_chat(chat_history)
+        async for token in handle:
+            # cprint(token.delta)
+            ctx.write_event_to_stream(ProgressEvent(msg=token.delta))
+            response += token.delta
+
+        ctx.write_event_to_stream(ProgressEvent(msg="\n\n"))            
+        self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
+        # response = self.search_documents(ev.result)
+        return ToolExecResultEvent(result=ev.result)
 
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:
@@ -151,8 +165,19 @@ async def main():
         w = DemoFlow(timeout=None, llm=llm, verbose=True)
         ctx = Context(w)
 
-        user_prompt = '''分析过去一周设备 test 的上线情况'''
-        handler = w.run(user_input=user_prompt, ctx=ctx)
+        # user_prompt = '''分析过去一周设备 demo 的 diagnose/error_code 点位数据'''
+        user_prompt = '''分析过去一周设备 demo 的 robotic_arm/voltage 点位数据'''
+        device_info = '''要查询的设备是 ABB FlexPendant。ABB FlexPendant 是一款手持式触摸屏设备，用于编程和控制 ABB 工业机器人。它作为机器人控制器的用户界面，允许操作员执行多种操作，如更改和运行程序、教授机器人新的动作以及调整参数。
+          设备定义的点位如下所示，
+          ```json
+          {
+            "robotic_arm": { "voltage": 3.14, "amper": 5.0},
+            "diagnose": {"error_code": 50153}
+          }
+        其中 robotic_arm 分组中包含了 voltage 和 amper 数据；
+        其中 diagnose 分组中包含了 error_code 是设备上报的错误代码；
+          '''
+        handler = w.run(user_input=user_prompt, device_info=device_info, ctx=ctx)
 
         async for ev in handler.stream_events():
             if isinstance(ev, ProgressEvent):

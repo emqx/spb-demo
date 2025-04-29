@@ -51,13 +51,24 @@ async def event_generator(prompt: str, session_id: str):
     memory = session_store.get_memory(session_id)
     if memory is not None:
         print(memory.get())
-    
+
+    device_info = '''要查询的设备是 ABB FlexPendant。ABB FlexPendant 是一款手持式触摸屏设备，用于编程和控制 ABB 工业机器人。它作为机器人控制器的用户界面，允许操作员执行多种操作，如更改和运行程序、教授机器人新的动作以及调整参数。
+          
+          设备定义的点位如下所示，
+          ```json
+          {
+            "robotic_arm": { "voltage": 3.14, "amper": 5.0},
+            "diagnose": {"error_code": 50153}
+          }
+        其中 robotic_arm 分组中包含了 voltage 和 amper 数据；
+        其中 diagnose 分组中包含了 error_code 是设备上报的错误代码；
+          '''
     # Initialize the LLM and workflow
     workflow = DemoFlow(timeout=None, llm=llm, rag=rag, verbose=True, memory=memory)
     ctx = Context(workflow)
 
     # Run the workflow
-    handler = workflow.run(user_input=prompt, ctx=ctx)
+    handler = workflow.run(user_input=prompt, device_info=device_info, ctx=ctx)
 
     try:
         async for ev in handler.stream_events():
