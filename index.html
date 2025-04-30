@@ -103,29 +103,11 @@
             margin-top: 40px;
         }
 
-        #submitBtn {
-            position: absolute;
-            right: 1rem;
-            bottom: 1rem;
-            background-color: var(--primary-color);
-            color: white;
-            border: none;
-            border-radius: 0.5rem;
-            padding: 0.5rem;
-            cursor: pointer;
-            transition: background-color 0.2s;
-        }
-
-        #submitBtn:disabled {
-            background-color: #93c5fd;
-            cursor: not-allowed;
-        }
-
         .loading {
             display: none;
             position: absolute;
-            right: 1rem;
-            bottom: 1rem;
+            right: -5px;
+            bottom: 26px;
         }
 
         .loading-spinner {
@@ -189,17 +171,47 @@
             margin-bottom: 0.5rem;
         }
 
-        .new-conversation-btn {
+        .input-buttons {
+            display: flex;
+            gap: 0.5rem;
             position: absolute;
-            right:0;
-           
+            right: -58px;
+            bottom: 15px;
+            height: 40px;
+        }
+
+         #submitBtn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #submitBtn:disabled {
+            background-color: #93c5fd;
+            cursor: not-allowed;
+        }
+
+        .new-conversation-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
             background-color: white;
             color: var(--primary-color);
             border: 1px solid var(--border-color);
             border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
+            padding: 0;
             cursor: pointer;
-            font-size: 0.9rem;
+            width: 36px;
+            height: 36px;
             transition: all 0.2s;
         }
 
@@ -220,16 +232,24 @@
         <div class="input-container">
             
             <div class="input-wrapper">
-                <button id="newConversationBtn" class="new-conversation-btn">New conversation</button>
                 <textarea id="promptInput"
-                    placeholder="Type your query here... (Press Enter to submit, Shift+Enter for new line)"
-                    rows="1"></textarea>
-                <button id="submitBtn">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 2L11 13M22 2L15 22L11 13M11 13L2 9" stroke="white" />
-                    </svg>
-                </button>
-                <div class="loading">
+                placeholder="Type your query here... (Press Enter to submit, Shift+Enter for new line)"
+                rows="1"></textarea>
+                <div class="input-buttons">
+                    <button id="submitBtn">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                    </button>
+                    <button id="newConversationBtn" class="new-conversation-btn">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                            <polyline points="23 4 23 10 17 10"></polyline>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                        </svg>
+                    </button> 
+                </div>
+                <div class="loading" style="display: none;">
                     <div class="loading-spinner"></div>
                 </div>
             </div>
