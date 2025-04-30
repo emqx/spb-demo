@@ -1,6 +1,9 @@
 
 
 
+## Architect diagram
+![alt text](./docs/arch.png)
+
 ## Setup workspace
 
 Follow the steps below to set up and run the application:
@@ -104,6 +107,7 @@ CREATE TABLE ot_it_mapping (
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('factory_1', 'LA factory');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('assembly_1', 'Big boy');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('test', 'Bee');  
+INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('demo', '擎天柱');  
 ```
 
 ## Install PostGres vectordb
@@ -150,9 +154,15 @@ Copy `.env.example` to `.env` and modify the values accordingly.
 - Type questions in the chatbox.
 
 **Demo scenario**
-- 分析过去一天设备 demo 的 diagnose/error_code 点位数据
+- 查询设备 demo 最新的 robotic_arm/voltage 点位数据
 - 分析过去一周设备 demo 的 robotic_arm/voltage 点位数据
 
+- 查询设备别名为擎天柱的最新的 robotic_arm/amber 点位数据
+
+- 查询设备 demo 最新的 diagnose/error_code 点位数据
+- 分析过去一天设备 demo 的 diagnose/error_code 点位数据
+
+**To be supported**
 - 查询过去一周节点 assembly_1 的离线情况 
   - Query the offline status of assembly_1 of last week.
 
