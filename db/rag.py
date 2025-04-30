@@ -42,7 +42,7 @@ class RAG:
         else:
             Settings.embed_model = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))
             self.__dimension = 1024
-            self.__store_uri = "./storage/en_ali.db"
+            self.__store_uri = "./storage/zh_ali.db"
             logging.info("Using Ali embedding model")
 
         if use_pg:
@@ -82,11 +82,19 @@ class RAG:
         from docling.document_converter import DocumentConverter
         from docling.chunking import HybridChunker
         from llama_index.core.schema import Document
+        from llama_index.core import VectorStoreIndex, get_response_synthesizer
+        from llama_index.core.retrievers import VectorIndexRetriever
+        from llama_index.core.query_engine import RetrieverQueryEngine
+        from llama_index.core.postprocessor import SimilarityPostprocessor
 
         doc = DocumentConverter().convert(path).document
 
-        chunker = HybridChunker(max_tokens=500)
+        chunker = HybridChunker(max_tokens=256)
         chunks = list(chunker.chunk(dl_doc=doc))
+
+        for chunk in chunks:
+            chunk.text = "\n".join([line for line in chunk.text.splitlines() if line.strip()])
+            #logging.info(f"{chunk.meta}, {chunk.text}, {len(chunk.text)}")
 
         documents = [
             Document(
@@ -105,17 +113,41 @@ class RAG:
             embed_model=Settings.embed_model,
             show_progress=True,
         )
-        self.engine = index.as_query_engine()
+        retriever = VectorIndexRetriever(
+            index=index,
+            similarity_top_k=5,
+        )
+        response_synthesizer = get_response_synthesizer()
+        self.engine = RetrieverQueryEngine(
+            retriever=retriever,
+            response_synthesizer=response_synthesizer,
+            node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.5)],
+        )
         end_time = time.time()
         logging.info(f"Index created from hybrid chunks in {end_time - start_time:.2f} seconds")
     
     def load_index_from_hybrid_chunks(self):
+        from llama_index.core import VectorStoreIndex, get_response_synthesizer
+        from llama_index.core.retrievers import VectorIndexRetriever
+        from llama_index.core.query_engine import RetrieverQueryEngine
+        from llama_index.core.postprocessor import SimilarityPostprocessor
+
         start_time = time.time()
         vector_store = MilvusVectorStore(uri=self.__store_uri, dim=self.__dimension)
         if self.use_pg:
             vector_store = self.__create_pg_store(dimension=self.__dimension)
         index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=Settings.embed_model)
-        self.engine = index.as_query_engine()
+        retriever = VectorIndexRetriever(
+            index=index,
+            similarity_top_k=5,
+        )
+        response_synthesizer = get_response_synthesizer()
+        self.engine = RetrieverQueryEngine(
+            retriever=retriever,
+            response_synthesizer=response_synthesizer,
+            node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.5)],
+        )
+
         end_time = time.time()
         logging.info(f"Index loaded from hybrid chunks in {end_time - start_time:.2f} seconds")
     
@@ -129,10 +161,13 @@ if __name__ == "__main__":
     load_dotenv()
     rag = RAG()
     #rag.create_index_from_hybrid_chunks("./data/3HAC066553-001_20250426182528.md")
-    #rag.create_index_from_hybrid_chunks("./data/3HAC066553-010_20250426183500.md")
-    rag.load_index_from_hybrid_chunks()
+    rag.create_index_from_hybrid_chunks("./data/3HAC066553-010_20250426183500.md")
+    #rag.load_index_from_hybrid_chunks()
     start_time = time.time()
-    response = rag.query("解释 50156")
+    response = rag.query("50515")
     end_time = time.time()
     logging.info(f"Query time: {end_time - start_time:.2f} seconds")
     logging.info(response.response.strip())
+    #for s in response.source_nodes:
+        #logging.info(s.get_score())
+        #logging.info(s)
