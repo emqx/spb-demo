@@ -106,8 +106,8 @@
         .loading {
             display: none;
             position: absolute;
-            right: 8rem;
-            bottom: 20px;
+            right: -5px;
+            bottom: 26px;
         }
 
         .loading-spinner {
@@ -185,9 +185,14 @@
             color: white;
             border: none;
             border-radius: 0.5rem;
-            padding: 0.5rem;
+            padding: 0;
             cursor: pointer;
             transition: background-color 0.2s;
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
 
         #submitBtn:disabled {
@@ -198,14 +203,15 @@
         .new-conversation-btn {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
+            justify-content: center;
             background-color: white;
             color: var(--primary-color);
             border: 1px solid var(--border-color);
             border-radius: 0.5rem;
-            padding: 0.5rem 1rem;
+            padding: 0;
             cursor: pointer;
-            font-size: 0.9rem;
+            width: 36px;
+            height: 36px;
             transition: all 0.2s;
         }
 
@@ -237,11 +243,10 @@
                         </svg>
                     </button>
                     <button id="newConversationBtn" class="new-conversation-btn">
-                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                             <polyline points="23 4 23 10 17 10"></polyline>
                             <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
                         </svg>
-                        New conversation
                     </button> 
                 </div>
                 <div class="loading" style="display: none;">
