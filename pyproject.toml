@@ -12,7 +12,6 @@ dependencies = [
 	"llama-index-llms-openai-like>=0.3.4",
 	"llama-index-llms-siliconflow>=0.2.1",
 	"llama-index-llms-deepseek",
-	"llama-index-vector-stores-postgres>=0.4.2",
 	"mcp-server>=0.1.4",
 	"mysql-connector-python>=9.3.0",
 	"numpy<2.0",
@@ -30,4 +29,5 @@ dependencies = [
 	"tdqm>=0.0.1",
 	"transformers>=4.42.4",
 	"torch==2.2.2",
+	"llama-index-tools-mcp>=0.1.2",
 ]

@@ -18,7 +18,7 @@ from llama_index.core.agent.workflow import (AgentWorkflow, AgentStream, ToolCal
 from llama_index.llms.openai_like import OpenAILike
 from llama_index.llms.siliconflow import SiliconFlow
 
-from llama_mcp import BasicMCPClient, McpToolSpec
+from llama_index.tools.mcp import BasicMCPClient, McpToolSpec
 from util import load_system_prompt,load_json_prompt
 from db.rag import RAG
 
