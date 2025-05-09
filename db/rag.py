@@ -2,20 +2,19 @@ import os
 import time
 from dotenv import load_dotenv
 import logging
-from pathlib import Path
 from tempfile import mkdtemp
 
-from llama_index.core import SimpleDirectoryReader,StorageContext,VectorStoreIndex,Settings, load_index_from_storage
+from llama_index.core import StorageContext, Settings 
 from llama_index.llms.siliconflow import SiliconFlow
 from llama_index.embeddings.huggingface import HuggingFaceEmbedding
-from llama_index.vector_stores.postgres import PGVectorStore
+from llama_index.core.vector_stores import (
+    MetadataFilter,
+    MetadataFilters,
+    FilterOperator,
+)
+from llama_index.vector_stores.milvus import MilvusVectorStore
 
 from ali_embedding import AliEmbeddings
-
-from llama_index.core import StorageContext, VectorStoreIndex
-from llama_index.core.node_parser import MarkdownNodeParser
-from llama_index.readers.docling import DoclingReader
-from llama_index.vector_stores.milvus import MilvusVectorStore
 
 load_dotenv()
 Settings.llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"),model=str(os.getenv("MODEL_NAME")),temperature=0,max_tokens=4000, timeout=180)
@@ -29,11 +28,6 @@ class RAG:
         else:
             local_embedding = False
         
-        if use_pg == "True" or use_pg == "true":
-            use_pg = True
-        else:
-            use_pg = False
-
         if local_embedding:
             Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
             self.__dimension = 768
@@ -45,47 +39,14 @@ class RAG:
             self.__store_uri = "./storage/zh_ali.db"
             logging.info("Using Ali embedding model")
 
-        if use_pg:
-            self.use_pg = True
-            logging.info("Using PGVectorStore")
-        else:
-            self.use_pg = False
-            logging.info("Using local VectorStore")
-        self.engine = None
-    
-    @staticmethod
-    def __create_pg_store(dimension: int) -> PGVectorStore:
-        host = os.getenv("PGSQL_HOST", "localhost")
-        port = os.getenv("PGSQL_PORT", 5432)
-        user = os.getenv("PGSQL_USER", "emqx")
-        password = os.getenv("PGSQL_PASSWORD", "public")
-        
-        vector_store = PGVectorStore.from_params(
-            database="mydatabase",
-            host=host,
-            password=password,
-            port=port,
-            user=user,
-            table_name="test_table",
-            embed_dim= dimension,
-            hnsw_kwargs={
-                "hnsw_m": 16,
-                "hnsw_ef_construction": 64,
-                "hnsw_ef_search": 40,
-                "hnsw_dist_method": "vector_cosine_ops",
-            },
-        )
-        return vector_store
+        self.index = None
     
     def create_index_from_hybrid_chunks(self, path: str):
         start_time = time.time()
         from docling.document_converter import DocumentConverter
         from docling.chunking import HybridChunker
         from llama_index.core.schema import Document
-        from llama_index.core import VectorStoreIndex, get_response_synthesizer
-        from llama_index.core.retrievers import VectorIndexRetriever
-        from llama_index.core.query_engine import RetrieverQueryEngine
-        from llama_index.core.postprocessor import SimilarityPostprocessor
+        from llama_index.core import VectorStoreIndex 
 
         doc = DocumentConverter().convert(path).document
 
@@ -100,59 +61,56 @@ class RAG:
             Document(
                 text=chunk.meta.headings[0] + ': ' + chunk.text,
                 metadata={
-                    "headings": chunk.meta.headings,
+                    "headings": "".join(chunk.meta.headings),
                 },
             ) for chunk in chunks
         ]
         vector_store = MilvusVectorStore(uri=self.__store_uri, dim=self.__dimension, overwrite=True)
-        if self.use_pg:
-            vector_store = self.__create_pg_store(dimension=self.__dimension)
         index = VectorStoreIndex.from_documents(
             documents=documents,
             storage_context=StorageContext.from_defaults(vector_store=vector_store),
             embed_model=Settings.embed_model,
             show_progress=True,
         )
-        retriever = VectorIndexRetriever(
-            index=index,
-            similarity_top_k=5,
-        )
-        response_synthesizer = get_response_synthesizer()
-        self.engine = RetrieverQueryEngine(
-            retriever=retriever,
-            response_synthesizer=response_synthesizer,
-            node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.5)],
-        )
+        self.index = index
         end_time = time.time()
         logging.info(f"Index created from hybrid chunks in {end_time - start_time:.2f} seconds")
     
     def load_index_from_hybrid_chunks(self):
-        from llama_index.core import VectorStoreIndex, get_response_synthesizer
+        from llama_index.core import VectorStoreIndex 
+
+        start_time = time.time()
+        vector_store = MilvusVectorStore(uri=self.__store_uri, dim=self.__dimension)
+        index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=Settings.embed_model)
+        self.index = index
+        end_time = time.time()
+        logging.info(f"Index loaded from hybrid chunks in {end_time - start_time:.2f} seconds")
+    
+    def query(self, query: str):
+        from llama_index.core import get_response_synthesizer
         from llama_index.core.retrievers import VectorIndexRetriever
         from llama_index.core.query_engine import RetrieverQueryEngine
         from llama_index.core.postprocessor import SimilarityPostprocessor
 
-        start_time = time.time()
-        vector_store = MilvusVectorStore(uri=self.__store_uri, dim=self.__dimension)
-        if self.use_pg:
-            vector_store = self.__create_pg_store(dimension=self.__dimension)
-        index = VectorStoreIndex.from_vector_store(vector_store=vector_store, embed_model=Settings.embed_model)
         retriever = VectorIndexRetriever(
-            index=index,
+            index=self.index,
             similarity_top_k=5,
+            filters=MetadataFilters(
+                filters=[MetadataFilter(
+                    key="headings",
+                    value=query,
+                    operator=FilterOperator.TEXT_MATCH,
+                )]
+            ),
         )
         response_synthesizer = get_response_synthesizer()
-        self.engine = RetrieverQueryEngine(
+        engine = RetrieverQueryEngine(
             retriever=retriever,
             response_synthesizer=response_synthesizer,
             node_postprocessors=[SimilarityPostprocessor(similarity_cutoff=0.5)],
         )
 
-        end_time = time.time()
-        logging.info(f"Index loaded from hybrid chunks in {end_time - start_time:.2f} seconds")
-    
-    def query(self, query: str):
-        response = self.engine.query(query)
+        response = engine.query(query)
         return response
     
 if __name__ == "__main__":
@@ -161,13 +119,11 @@ if __name__ == "__main__":
     load_dotenv()
     rag = RAG()
     #rag.create_index_from_hybrid_chunks("./data/3HAC066553-001_20250426182528.md")
-    rag.create_index_from_hybrid_chunks("./data/3HAC066553-010_20250426183500.md")
-    #rag.load_index_from_hybrid_chunks()
+    #rag.create_index_from_hybrid_chunks("./data/3HAC066553-010_20250426183500.md")
+    rag.load_index_from_hybrid_chunks()
     start_time = time.time()
     response = rag.query("50515")
     end_time = time.time()
     logging.info(f"Query time: {end_time - start_time:.2f} seconds")
-    logging.info(response.response.strip())
-    #for s in response.source_nodes:
-        #logging.info(s.get_score())
-        #logging.info(s)
+    logging.info(response.response)
+    logging.info(response.metadata)

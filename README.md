@@ -110,33 +110,6 @@ INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('test', 'Bee');
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('demo', '擎天柱');  
 ```
 
-## Install PostGres vectordb
-
-Refer to [doc](https://medium.com/@adarsh.ajay/setting-up-postgresql-with-pgvector-in-docker-a-step-by-step-guide-d4203f6456bd) for detailed instruction.
-
-```shell
-docker pull ankane/pgvector
-
-docker run -e POSTGRES_USER=emqx \
-           -e POSTGRES_PASSWORD=public \
-           -e POSTGRES_DB=mydatabase \
-           --name my_postgres \
-           -p 5432:5432 \
-           -d ankane/pgvector
-
-#In container
-psql -h localhost -U emqx -d mydatabase -p 5432
-
-#SQLs
-#List the tables
-\dt 
-            List of relations
- Schema |      Name       | Type  | Owner
---------+-----------------+-------+-------
- public | data_test_table | table | emqx
-(1 row)
-```
-
 ## Usage
 Copy `.env.example` to `.env` and modify the values accordingly.
 
