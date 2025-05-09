@@ -29,4 +29,5 @@ dependencies = [
 	"tdqm>=0.0.1",
 	"transformers>=4.42.4",
 	"torch==2.2.2",
+	"llama-index-tools-mcp>=0.1.2",
 ]
