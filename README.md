@@ -26,11 +26,9 @@ uv venv
 ### Install software and configurations
 Please refer to [software preparation](docs/software.md).
 
-## Usage
-Copy `.env.example` to `.env` and modify the values accordingly.
-
 ## Run the application
 **Steps**
+- Copy `.env.example` to `.env` and modify the values accordingly.
 - Run sparkplug mcp server
 ```bash
   uv run spb_server.py
