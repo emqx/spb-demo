@@ -14,9 +14,12 @@ Follow the steps below to set up and run the application:
 git clone https://github.com/emqx/spb_demo/
 cd spb_demo
 ```
+
 2. The project use `uv` to manage libs and project, please install [uv](https://docs.astral.sh/uv/getting-started/installation/) before getting start.
 
-3. Install Dependencies and Activate Virtual Environment
+3. Some dependencies need to be compiled through cmake, please install [cmake](https://cmake.org/download/) before getting start.
+
+4. Install Dependencies and Activate Virtual Environment
 ```bash
 uv sync
 uv venv
