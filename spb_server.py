@@ -17,23 +17,37 @@ mcp = FastMCP()
 spb = SparkPlugBApp()
 
 @mcp.tool()
-async def get_current_time() -> str:
-    """Get current local time.
+async def get_timeseries_db_type() -> str:
+    """Get timeseries database type.
 
     Returns:
-        Current time, format: YYYY-MM-DD HH:MM:SS, e.g. 2023-10-01 00:00:00.
+        Timeseries database type, options: TD, Datalayer.
+    """
+    logging.info("Getting timeseries database type")
+    db_type = os.getenv("DB_TYPE", "TD")
+    if db_type == "TD":
+        return "TD"
+    else:
+        return "Datalayer"
+
+@mcp.tool()
+async def get_current_time() -> str:
+    """Get current timezone local time.
+
+    Returns:
+        Current time, include timezone, format: YYYY-MM-DD HH:MM:SS+Z, e.g. 2023-10-01 00:00:00+0000.
     """
     logging.info("Getting current time")
-    return time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+    return time.strftime("%Y-%m-%d %H:%M:%S.000%z", time.localtime())
 
 @mcp.tool()
 async def get_device_tag_value_count_by_sql(sql) -> int:
     """
     To get the returned number of records with specified conditions. 
 
-    tags table schema:
+    tag_values table schema:
 		ts: timestamp, timezone is UTC+0
-		tag: tag name  (string type)
+		tag_name: tag name  (string type)
 		device: device name  (string type)
 		value: tag value (string type)
 
@@ -43,7 +57,7 @@ async def get_device_tag_value_count_by_sql(sql) -> int:
     """
 
     logging.info(f"Getting get_device_tag_value_count_by_sql by sql {sql}")
-    results = spb.datalayer_execute_sql(sql)
+    results = spb.db_execute_sql(sql)
     if not results:
         logging.info("No results found")
         return 0
@@ -55,9 +69,9 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
     ''' 
     Important: If the return number is larger than 300, then use `date_bin` function, and choose right aggregated time unit to return the records that close to 300. 
 
-    tags table schema:
+    tag_values table schema:
 		ts: timestamp, timezone is UTC+0
-		tag: tag name  (string type)
+		tag_name: tag name  (string type)
 		device: device name  (string type)
 		value: tag value (string type)
 
@@ -67,13 +81,13 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
     It allows specifying an origin-timestamp as the starting point, which defaults to the UNIX epoch (1970-01-01 00:00:00 UTC) if not provided. 
     For example: date_bin('interval 1 hour', ts) aligns timestamps into 1-hour bins starting from the origin. 
     INTERVAL is string such as, '2 hour', the available time units: 'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
-    For exmaple, with below SQL, it queries the tags table and calculates average value as returned value in 1 hour, so reduced the number of record to 1 for every 1 hour.
-    `SELECT date_bin('3 minute', ts) AS timepoint, value FROM tags WHERE where_expression GROUP BY timepoint, value ORDER BY timepoint;`
-    `SELECT date_bin('1 hour', ts) AS timepoint, avg(CAST(value AS FLOAT)) AS value FROM tags WHERE where_expression GROUP BY timepoint ORDER BY timepoint;`
+    For exmaple, with below SQL, it queries the tag_values table and calculates average value as returned value in 1 hour, so reduced the number of record to 1 for every 1 hour.
+    `SELECT date_bin('3 minute', ts) AS timepoint, value FROM tag_values WHERE where_expression GROUP BY timepoint, value ORDER BY timepoint;`
+    `SELECT date_bin('1 hour', ts) AS timepoint, avg(CAST(value AS FLOAT)) AS value FROM tag_values WHERE where_expression GROUP BY timepoint ORDER BY timepoint;`
     '''
     
     logging.info(f"Getting get_device_tag_value_aggregate_time_window_by_sql by sql {sql}")
-    results = spb.datalayer_execute_sql(sql)
+    results = spb.db_execute_sql(sql)
     if not results:
         logging.info("No results found")
         return "No results found"
@@ -92,15 +106,15 @@ async def get_device_tag_value_distinct_by_sql(sql) -> int:
     """
     To get the returned distinct records with specified conditions. 
     
-    tags table schema:
+    tag_values table schema:
 		ts: timestamp, timezone is UTC+0
-		tag: tag name  (string type)
+		tag_name: tag name  (string type)
 		device: device name  (string type)
 		value: tag value (string type)
     
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different;
           
-    Please use `SELECT DISTINCT value FROM tag WHERE where_expr` for getting the distinct value with specified conditions. 
+    Please use `SELECT DISTINCT value FROM tag_values WHERE where_expr` for getting the distinct value with specified conditions. 
     """
     logging.info(f"Getting get_device_tag_value_distinct_by_sql by sql {sql}")
 
@@ -108,27 +122,27 @@ async def get_device_tag_value_distinct_by_sql(sql) -> int:
 
 @mcp.tool()
 async def get_device_tag_history_raw_values_by_sql(sql) -> str:
-	"""Query device raw tag history value from tags table without aggregating by window.
+	"""Query device raw tag history value from tag_values table without aggregating by window.
      
-	tags table schema:
+	tag_values table schema:
 		ts: timestamp, timezone is UTC+0
-		tag: tag name  (string type)
+		tag_name: tag name  (string type)
 		device: device name  (string type)
 		value: tag value (string type)
 
 	Args:
-		sql: SQL query, format: SELECT * FROM tags [WHERE device = 'device_name'] [AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800'] [AND tag = 'tag_name']; 
+		sql: SQL query, format: SELECT * FROM tag_values [WHERE device = 'device_name'] [AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800'] [AND tag_name = 'tag_name']; 
 			if query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800;
 			do not use like Now() or current_timestamp() in sql, because the time zone is different;
-			e.g. query all tags history: SELECT * FROM tags;
-			e.g. query all tags history with time range: SELECT * FROM tags WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800';
-			e.g. query all tags history with tag name: SELECT * FROM tags WHERE tag = 'tag_name';
-			e.g. query all tags history with time range and tag name: SELECT * FROM tags WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag = 'tag_name';
-			e.g. query specific device tag history with time range and tag name: SELECT * FROM tags WHERE device = 'device_name' AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag = 'tag_name';
+			e.g. query all tags history: SELECT * FROM tag_values;
+			e.g. query all tags history with time range: SELECT * FROM tag_values WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800';
+			e.g. query all tags history with tag name: SELECT * FROM tag_values WHERE tag_name = 'tag_name';
+			e.g. query all tags history with time range and tag name: SELECT * FROM tag_values WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag_name = 'tag_name';
+			e.g. query specific device tag history with time range and tag name: SELECT * FROM tag_values WHERE device = 'device_name' AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag_name = 'tag_name';
 
 	"""
 	logging.info(f"Getting get_device_tag_history_raw_values_by_sql by sql {sql}")
-	results = spb.datalayer_execute_sql(sql)
+	results = spb.db_execute_sql(sql)
 	if not results:
 		logging.info("No results found")
 		return "No results found"
@@ -166,7 +180,7 @@ async def get_device_status_count_by_sql(sql) -> int:
     """
 
     logging.info(f"Getting device status record number by sql {sql}")
-    results = spb.datalayer_execute_sql(sql)
+    results = spb.db_execute_sql(sql)
     if not results:
         logging.info("No results found")
         return 0
@@ -206,7 +220,7 @@ async def get_device_status_by_sql(sql: str) -> str:
             To get aggregated offline status: `SELECT date_bin('1 hour', ts) AS timepoint, count(*) AS status FROM devices WHERE status="offline" GROUP BY timepoint ORDER BY timepoint;`
     """
     logging.info(f"Getting device status by sql: {sql}")
-    results  = spb.datalayer_execute_sql(sql)
+    results  = spb.db_execute_sql(sql)
     if not results:
         logging.info("No results found")
         return "No results found"
@@ -266,7 +280,7 @@ if __name__ == "__main__":
 
     if not spb.connect():
         exit(1)
-        
+    
     starlette_app = create_starlette_app(mcp._mcp_server, debug=True)
     uvicorn.run(starlette_app, host="0.0.0.0", port=8081)
 
