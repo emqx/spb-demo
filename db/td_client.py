@@ -10,7 +10,7 @@ class Client:
 		user = os.environ["TD_USER"]
 		password = os.environ["TD_PASSWORD"]
 		try:
-			conn = taosws.connect(host=host, port=port, user=user, password=password)
+			conn = taosws.connect(host=host, port=port, user=user, password=password, convert_timestamp="true", timezone="Asia/Shanghai")
 			self.__client = conn
 		except Exception as e:
 			logging.error(f"Error connecting to TD: {e}")

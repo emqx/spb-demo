@@ -14,6 +14,7 @@ class SparkPlugBApp:
             self.db = TDDB()
         else:
             self.db = DataLayerDB()
+        self.db_type = db_type
         self.mariadb = Client()
         self.client = SparkPlugBClient()
 
@@ -57,9 +58,14 @@ class SparkPlugBApp:
     def query_device_by_alias(self, alias: str) -> str | None:
         return self.mariadb.query_device_by_alias(alias)
     
-    def datalayer_execute_sql(self, sql: str) -> list[dict]:
-        result = self.db.execute_sql(sql)
-        return result
+    def db_execute_sql(self, sql: str) -> list[dict]:
+        import logging
+        if self.db_type == "TD":
+            result = self.db.query_sql(sql)
+            return result
+        else:
+            result = self.db.execute_sql(sql)
+            return result
     
     def stop(self):
         self.client.disconnect()
