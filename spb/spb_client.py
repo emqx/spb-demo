@@ -8,13 +8,18 @@ from pandas import Timestamp
 import random
 from dotenv import load_dotenv
 
-from db.datalayer import DB
+from db.datalayer import DB as DataLayerDB
+from db.td import DB as TDDB
 
 from spb_pb2 import Payload
 
 class SparkPlugBClient:
     def __init__(self):
-        self.datalayer = DB()
+        db_type = os.getenv("DB_TYPE", "TD")
+        if db_type == "TD":
+            self.db = TDDB()
+        else:
+            self.db = DataLayerDB()
         self.client = None
         self.broker = os.getenv("MQTT_BROKER")
         self.port = int(os.getenv("MQTT_PORT", 1883))
@@ -65,7 +70,7 @@ class SparkPlugBClient:
             elif 'DBIRTH' in msg.topic:
                 logging.info("Device Birth message received")
                 btime = self.__timestamp_to_Timestamp(int(json_obj['timestamp']))
-                self.datalayer.update_device_status(btime, device, 'online')
+                self.db.update_device_status(btime, device, 'online')
                 metrics = json_obj['metrics']
                 self.device_tag_alias[device] = {}
                 self.device_tags[device] = {}
@@ -76,7 +81,7 @@ class SparkPlugBClient:
                     datatype = metric['datatype']
                     value = self.__parse_spb_value(metric)
 
-                    self.datalayer.insert_tag(device, name, value, tag_time)
+                    self.db.insert_tag(device, name, value, tag_time)
                     self.device_tags[device][name] = value
                     if 'alias' in metric:
                         alias = metric['alias']
@@ -87,7 +92,7 @@ class SparkPlugBClient:
             elif 'DDEATH' in msg.topic:
                 logging.info(f"Device Death message received")
                 btime = self.__timestamp_to_Timestamp(int(json_obj['timestamp']))
-                self.datalayer.update_device_status(btime, device, 'offline')
+                self.db.update_device_status(btime, device, 'offline')
             elif 'DDATA' in msg.topic:
                 # logging.info("Device Data message received")
                 metrics = json_obj['metrics']
@@ -102,12 +107,12 @@ class SparkPlugBClient:
                         if 'name' in metric:
                             name = metric['name']
                             self.device_tags[device][name] = value
-                            self.datalayer.insert_tag(device, name, value, tag_time)
+                            self.db.insert_tag(device, name, value, tag_time)
                         else:
                             alias = metric['alias']
                             name = self.device_tag_alias[device].get(alias, alias)
                             self.device_tags[device][name] = value
-                            self.datalayer.insert_tag(device, name, value, tag_time)
+                            self.db.insert_tag(device, name, value, tag_time)
                         time.sleep(0.05)
             elif 'NDATA' in msg.topic:
                 logging.info("Node Data message received")
