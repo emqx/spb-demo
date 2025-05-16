@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS devices (
     `status` BINARY(32))
 
 CREATE TABLE IF NOT EXISTS tag_values (
-    `ts` TIMESTAMP, `tag_name` BINARY(128), `value` BINARY(128), `device` BINARY(128))
+    `ts` TIMESTAMP, `tag_name` BINARY(128), `tag_value` BINARY(128), `device` BINARY(128))
 ```
 
 ## MariaDB

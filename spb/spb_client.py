@@ -8,18 +8,13 @@ from pandas import Timestamp
 import random
 from dotenv import load_dotenv
 
-from db.datalayer import DB as DataLayerDB
 from db.td import DB as TDDB
 
 from spb_pb2 import Payload
 
 class SparkPlugBClient:
     def __init__(self):
-        db_type = os.getenv("DB_TYPE", "TD")
-        if db_type == "TD":
-            self.db = TDDB()
-        else:
-            self.db = DataLayerDB()
+        self.db = TDDB()
         self.client = None
         self.broker = os.getenv("MQTT_BROKER")
         self.port = int(os.getenv("MQTT_PORT", 1883))

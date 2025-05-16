@@ -31,7 +31,7 @@ class DB:
     def create_tags_table(self):
         sql = """
         CREATE TABLE IF NOT EXISTS tag_values (
-            `ts` TIMESTAMP, `tag_name` BINARY(128), `value` BINARY(128), `device` BINARY(128))
+            `ts` TIMESTAMP, `tag_name` BINARY(128), `tag_value` BINARY(128), `device` BINARY(128))
         """
         self.td.execute(sql)
     
