@@ -17,20 +17,6 @@ mcp = FastMCP()
 spb = SparkPlugBApp()
 
 @mcp.tool()
-async def get_timeseries_db_type() -> str:
-    """Get timeseries database type.
-
-    Returns:
-        Timeseries database type, options: TD, Datalayer.
-    """
-    logging.info("Getting timeseries database type")
-    db_type = os.getenv("DB_TYPE", "TD")
-    if db_type == "TD":
-        return "TD"
-    else:
-        return "Datalayer"
-
-@mcp.tool()
 async def get_current_time() -> str:
     """Get current timezone local time.
 
@@ -49,7 +35,7 @@ async def get_device_tag_value_count_by_sql(sql) -> int:
 		ts: timestamp, timezone is UTC+0
 		tag_name: tag name  (string type)
 		device: device name  (string type)
-		value: tag value (string type)
+		tag_value: tag value (string type)
 
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different; 
     
@@ -73,7 +59,7 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
 		ts: timestamp, timezone is UTC+0
 		tag_name: tag name  (string type)
 		device: device name  (string type)
-		value: tag value (string type)
+		tag_value: tag value (string type)
 
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different;          
     
@@ -81,9 +67,9 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
     It allows specifying an origin-timestamp as the starting point, which defaults to the UNIX epoch (1970-01-01 00:00:00 UTC) if not provided. 
     For example: date_bin('interval 1 hour', ts) aligns timestamps into 1-hour bins starting from the origin. 
     INTERVAL is string such as, '2 hour', the available time units: 'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
-    For exmaple, with below SQL, it queries the tag_values table and calculates average value as returned value in 1 hour, so reduced the number of record to 1 for every 1 hour.
-    `SELECT date_bin('3 minute', ts) AS timepoint, value FROM tag_values WHERE where_expression GROUP BY timepoint, value ORDER BY timepoint;`
-    `SELECT date_bin('1 hour', ts) AS timepoint, avg(CAST(value AS FLOAT)) AS value FROM tag_values WHERE where_expression GROUP BY timepoint ORDER BY timepoint;`
+    For exmaple, with below SQL, it queries the tag_values table and calculates average tag_value as returned tag_value in 1 hour, so reduced the number of record to 1 for every 1 hour.
+    `SELECT date_bin('3 minute', ts) AS timepoint, tag_value FROM tag_values WHERE where_expression GROUP BY timepoint, tag_value ORDER BY timepoint;`
+    `SELECT date_bin('1 hour', ts) AS timepoint, avg(CAST(tag_value AS FLOAT)) AS value FROM tag_values WHERE where_expression GROUP BY timepoint ORDER BY timepoint;`
     '''
     
     logging.info(f"Getting get_device_tag_value_aggregate_time_window_by_sql by sql {sql}")
@@ -97,7 +83,7 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
         timestamp = result.get('timepoint')
         history.append({
 			"time": spb.timestamp_to_str(timestamp),
-			"value": result['value']
+			"tag_value": result['tag_value']
 		})
     return history
 
@@ -110,11 +96,11 @@ async def get_device_tag_value_distinct_by_sql(sql) -> int:
 		ts: timestamp, timezone is UTC+0
 		tag_name: tag name  (string type)
 		device: device name  (string type)
-		value: tag value (string type)
+		tag_value: tag value (string type)
     
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different;
           
-    Please use `SELECT DISTINCT value FROM tag_values WHERE where_expr` for getting the distinct value with specified conditions. 
+    Please use `SELECT DISTINCT tag_value FROM tag_values WHERE where_expr` for getting the distinct tag_value with specified conditions. 
     """
     logging.info(f"Getting get_device_tag_value_distinct_by_sql by sql {sql}")
 
@@ -128,7 +114,7 @@ async def get_device_tag_history_raw_values_by_sql(sql) -> str:
 		ts: timestamp, timezone is UTC+0
 		tag_name: tag name  (string type)
 		device: device name  (string type)
-		value: tag value (string type)
+		tag_value: tag value (string type)
 
 	Args:
 		sql: SQL query, format: SELECT * FROM tag_values [WHERE device = 'device_name'] [AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800'] [AND tag_name = 'tag_name']; 
@@ -153,7 +139,7 @@ async def get_device_tag_history_raw_values_by_sql(sql) -> str:
 		timestamp = result.get('ts')
 		history.append({
 			"time": spb.timestamp_to_str(timestamp),
-			"value": result['value']
+			"tag_value": result['tag_value']
 		})
 	return history
 

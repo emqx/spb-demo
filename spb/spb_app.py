@@ -1,20 +1,13 @@
 import os
 from pandas import Timestamp
 
-from db.datalayer import DB as DataLayerDB
 from db.td import DB as TDDB
 from db.mariadb import Client
 from spb_client import SparkPlugBClient
 
-
 class SparkPlugBApp:
     def __init__(self):
-        db_type = os.getenv("DB_TYPE", "TD")
-        if db_type == "TD":
-            self.db = TDDB()
-        else:
-            self.db = DataLayerDB()
-        self.db_type = db_type
+        self.db = TDDB()
         self.mariadb = Client()
         self.client = SparkPlugBClient()
 
@@ -59,13 +52,8 @@ class SparkPlugBApp:
         return self.mariadb.query_device_by_alias(alias)
     
     def db_execute_sql(self, sql: str) -> list[dict]:
-        import logging
-        if self.db_type == "TD":
-            result = self.db.query_sql(sql)
-            return result
-        else:
-            result = self.db.execute_sql(sql)
-            return result
+        result = self.db.query_sql(sql)
+        return result
     
     def stop(self):
         self.client.disconnect()
