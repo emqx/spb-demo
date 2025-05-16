@@ -21,50 +21,28 @@ demo
 
 ## Setup timeseries database
 
-- Pull Datalayers
+- Pull TDengine
 
 ```bash
-docker pull datalayers/datalayers:v2.2.15
+docker pull tdengine/tdengine:latest
 ```
 
-- Run Datalayers
+- Run TDengine
 
 ```bash
-docker run --name datalayers -d \
-  -v ~/data:/var/lib/datalayers \
-  -p 8360:8360 -p 8361:8361 \
-  datalayers/datalayers:v2.2.15
+docker run -d -p 6030:6030 -p 6041:6041 -p 6043:6043 -p 6044-6049:6044-6049 -p 6044-6045:6044-6045/udp -p 6060:6060 tdengine/tdengine
 ```
-- To enter the bash
-```bash
-docker exec -it datalayers bash
+- Create database and table
 ```
-- Login and create database
-```bash
-dlsql -u admin -p public
-create database demo;
-use demo;
-```
-- Create tables
-```sql
- CREATE TABLE tags (
-  ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  tag STRING,
-  device STRING,
-  value STRING,
-  timestamp KEY (ts))
-  PARTITION BY HASH(device) PARTITIONS 8
-  ENGINE=TimeSeries
-  with (ttl='10d');
+main application will create the database and table automatically.
 
- CREATE TABLE devices (
-  ts TIMESTAMP(9) NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  device STRING,
-  status STRING,
-  timestamp KEY (ts))
-  PARTITION BY HASH(device) PARTITIONS 8
-  ENGINE=TimeSeries
-  with (ttl='10d');
+CREATE TABLE IF NOT EXISTS devices (
+    `ts` TIMESTAMP,
+    `device` BINARY(128),
+    `status` BINARY(32))
+
+CREATE TABLE IF NOT EXISTS tag_values (
+    `ts` TIMESTAMP, `tag_name` BINARY(128), `value` BINARY(128), `device` BINARY(128))
 ```
 
 ## MariaDB
