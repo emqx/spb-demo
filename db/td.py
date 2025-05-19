@@ -67,10 +67,11 @@ class DB:
     def query_sql(self, sql: str) -> list[dict]:
         result = self.td.query(sql)
         lresult = []
-        index = 0;
         for row in result:
-            lresult.append({result.fields[index].name(): row[0]})
-            index += 1
+            item = {}
+            for i in range(len(row)):
+                item[result.fields[i].name()] = row[i]
+            lresult.append(item)
         return lresult
 
 if __name__ == "__main__":
@@ -79,4 +80,5 @@ if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "../logs/spb_server.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
     db = DB()
     db.create_db()
-    db.query_sql("SELECT COUNT(*) AS rec_count FROM tag_values")
+    db.query_sql("SELECT COUNT(*) AS rec_count FROM tag_values WHERE device = 'modbus' AND tag_name = 'diagnose/tag1' AND ts > '2025-05-18 07:43:05+0000' AND ts < '2025-05-19 07:43:05+0000'")
+    db.query_sql("SELECT avg(CAST(tag_value AS FLOAT)) AS t_value FROM tag_values WHERE device = 'modbus' AND tag_name = 'diagnose/tag1' AND ts > '2025-05-18 07:43:05+0000' AND ts < '2025-05-19 07:43:05+0000' INTERVAL(48m)")

@@ -52,10 +52,10 @@ async def get_device_tag_value_count_by_sql(sql) -> int:
     To get the returned number of records with specified conditions. 
 
     tag_values table schema:
-		ts: timestamp, timezone is UTC+0
-		tag_name: tag name  (string type)
-		device: device name  (string type)
-		tag_value: tag value (string type)
+        ts: timestamp, timezone is UTC+0
+        tag_name: tag name  (string type)
+        device: device name  (string type)
+        tag_value: tag value (string type)
 
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different; 
     
@@ -73,22 +73,25 @@ async def get_device_tag_value_count_by_sql(sql) -> int:
 @mcp.tool()
 async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
     ''' 
-    Important: If the return number is larger than 300, then use `date_bin` function, and choose right aggregated time unit to return the records that close to 300. 
+    Important: If the return number is larger than 300, then use `INTERVAL` function, and choose right aggregated time unit to return the records that close to 300. 
 
     tag_values table schema:
-		ts: timestamp, timezone is UTC+0
-		tag_name: tag name  (string type)
-		device: device name  (string type)
-		tag_value: tag value (string type)
+        ts: timestamp, timezone is UTC+0
+        tag_name: tag name  (string type)
+        device: device name  (string type)
+        tag_value: tag value (string type)
 
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different;          
     
     Use `INTERVAL(interval_val)` to leverage time windows to decrease the number of returned records. The INTERVAL function truncates the expression based on the input interval time unit. 
     INTERVAL need to be used with aggregate functions like COUNT, SUM, AVG, MIN, MAX, etc.
     For example: INTERVAL(1h) aligns timestamps into 1-hour bins starting from the origin. 
-    interval_val is string such as, '2h', the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
+    interval_val: such as, 2h, the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
     For exmaple, with below SQL, it queries the tag_values table and calculates average tag_value as returned tag_value in 1 hour, so reduced the number of record to 1 for every 1 hour.
     `SELECT avg(CAST(tag_value AS FLOAT)) AS t_value FROM tag_values WHERE where_expression INTERVAL(3m);`
+    Illegal SQL:
+    `SELECT ts, avg(CAST(tag_value AS FLOAT)) AS t_value FROM tag_values WHERE where_expression INTERVAL(3m);`
+    because the ts is not aggregated, syntax error.
     '''
     
     logging.info(f"Getting get_device_tag_value_aggregate_time_window_by_sql by sql {sql}")
@@ -96,15 +99,8 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
     if not results:
         logging.info("No results found")
         return "No results found"
-
-    history = []
-    for result in results:
-        timestamp = result.get('timepoint')
-        history.append({
-			"time": spb.timestamp_to_str(timestamp),
-			"tag_value": result['tag_value']
-		})
-    return history
+    logging.info(f"Results: {results}")
+    return results
 
 @mcp.tool()
 async def get_device_tag_value_distinct_by_sql(sql) -> int:
@@ -112,10 +108,10 @@ async def get_device_tag_value_distinct_by_sql(sql) -> int:
     To get the returned distinct records with specified conditions. 
     
     tag_values table schema:
-		ts: timestamp, timezone is UTC+0
-		tag_name: tag name  (string type)
-		device: device name  (string type)
-		tag_value: tag value (string type)
+        ts: timestamp, timezone is UTC+0
+        tag_name: tag name  (string type)
+        device: device name  (string type)
+        tag_value: tag value (string type)
     
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different;
           
@@ -127,40 +123,33 @@ async def get_device_tag_value_distinct_by_sql(sql) -> int:
 
 @mcp.tool()
 async def get_device_tag_history_raw_values_by_sql(sql) -> str:
-	"""Query device raw tag history value from tag_values table without aggregating by window.
+    """Query device raw tag history value from tag_values table without aggregating by window.
      
-	tag_values table schema:
-		ts: timestamp, timezone is UTC+0
-		tag_name: tag name  (string type)
-		device: device name  (string type)
-		tag_value: tag value (string type)
+    tag_values table schema:
+        ts: timestamp, timezone is UTC+0
+        tag_name: tag name  (string type)
+        device: device name  (string type)
+        tag_value: tag value (string type)
 
-	Args:
-		sql: SQL query, format: SELECT * FROM tag_values [WHERE device = 'device_name'] [AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800'] [AND tag_name = 'tag_name']; 
-			if query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800;
-			do not use like Now() or current_timestamp() in sql, because the time zone is different;
-			e.g. query all tags history: SELECT * FROM tag_values;
-			e.g. query all tags history with time range: SELECT * FROM tag_values WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800';
-			e.g. query all tags history with tag name: SELECT * FROM tag_values WHERE tag_name = 'tag_name';
-			e.g. query all tags history with time range and tag name: SELECT * FROM tag_values WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag_name = 'tag_name';
-			e.g. query specific device tag history with time range and tag name: SELECT * FROM tag_values WHERE device = 'device_name' AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag_name = 'tag_name';
+    Args:
+        sql: SQL query, format: SELECT * FROM tag_values [WHERE device = 'device_name'] [AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800'] [AND tag_name = 'tag_name']; 
+            if query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800;
+            do not use like Now() or current_timestamp() in sql, because the time zone is different;
+            e.g. query all tags history: SELECT * FROM tag_values;
+            e.g. query all tags history with time range: SELECT * FROM tag_values WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800';
+            e.g. query all tags history with tag name: SELECT * FROM tag_values WHERE tag_name = 'tag_name';
+            e.g. query all tags history with time range and tag name: SELECT * FROM tag_values WHERE ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag_name = 'tag_name';
+            e.g. query specific device tag history with time range and tag name: SELECT * FROM tag_values WHERE device = 'device_name' AND ts > '2023-10-01 00:00:00+0800' AND ts < '2025-10-02 00:00:00+0800' AND tag_name = 'tag_name';
 
-	"""
-	logging.info(f"Getting get_device_tag_history_raw_values_by_sql by sql {sql}")
-	results = spb.db_execute_sql(sql)
-	if not results:
-		logging.info("No results found")
-		return "No results found"
+    """
+    logging.info(f"Getting get_device_tag_history_raw_values_by_sql by sql {sql}")
+    results = spb.db_execute_sql(sql)
+    if not results:
+        logging.info("No results found")
+        return "No results found"
 
-	history = []
-	for result in results:
-		# Check for timepoint first (from date_bin queries), fall back to ts if not found
-		timestamp = result.get('ts')
-		history.append({
-			"time": spb.timestamp_to_str(timestamp),
-			"tag_value": result['tag_value']
-		})
-	return history
+    logging.info(f"Results: {results}")
+    return results
 
 @mcp.tool()
 async def get_device_latest_tag_value(device: str, tag: str) -> str:
@@ -219,9 +208,12 @@ async def get_device_status_by_sql(sql: str) -> str:
             Use `INTERVAL(interval_val)` to leverage time windows to decrease the number of returned records. The INTERVAL function truncates the expression based on the input interval time unit. 
             INTERVAL need to be used with aggregate functions like COUNT, SUM, AVG, MIN, MAX, etc.
             For example: INTERVAL(1h) aligns timestamps into 1-hour bins starting from the origin. 
-            interval_val is string such as, '2h', the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
+            interval_val: such as, 2h, the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
             For exmaple, with below SQL, it queries the tag_values table and calculates average tag_value as returned tag_value in 1 hour, so reduced the number of record to 1 for every 1 hour.
             `SELECT avg(CAST(tag_value AS FLOAT)) AS t_value FROM tag_values WHERE where_expression INTERVAL(3m);`
+            Illegal SQL:
+            `SELECT ts, avg(CAST(tag_value AS FLOAT)) AS t_value FROM tag_values WHERE where_expression INTERVAL(3m);`
+            because the ts is not aggregated, syntax error.
     """
     logging.info(f"Getting device status by sql: {sql}")
     results  = spb.db_execute_sql(sql)
@@ -229,14 +221,7 @@ async def get_device_status_by_sql(sql: str) -> str:
         logging.info("No results found")
         return "No results found"
 
-    status = []
-    for result in results:
-        timestamp = result.get('timepoint', result.get('ts'))
-        status.append({
-            "status": result['status'],
-            "time": spb.timestamp_to_str(timestamp)
-        })
-    return status
+    return results
     
 from mcp.server import Server
 from starlette.requests import Request
