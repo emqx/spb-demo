@@ -46,22 +46,13 @@ Please refer to [software preparation](docs/software.md).
 ## Demos
 
 **Demo scenario**
+- 列出 demo 的树形结构图
 - 查询设备 demo 最新的 robotic_arm/voltage 点位数据
 - 分析过去一周设备 demo 的 robotic_arm/voltage 点位数据
-
 - 查询设备别名为擎天柱的最新的 robotic_arm/amber 点位数据
-
 - 查询设备 demo 最新的 diagnose/error_code 点位数据
 - 分析过去一天设备 demo 的 diagnose/error_code 点位数据
 
 **To be supported**
-- 查询过去一周节点 assembly_1 的离线情况 
-  - Query the offline status of assembly_1 of last week.
-
-- 请列出设备 test 的树形结构 
-  - List the tree structure of device named "test".
-
+- 查询过去一周节点 assembly_1 的离线情况
 - 总结一下过去一周 factory_1 组下节点名称为 assembly_1 下的 test 设备点位 group2/voltage 的工作情况 
-  - Summarize the last week status of tag points "group2/voltage", which is under device named "test" of assembly_1 edge node locates in factory_1.
-
-- Query the offline status of  "Big boy" of last week.
