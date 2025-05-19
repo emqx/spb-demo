@@ -39,10 +39,10 @@ async def get_ot_key(alias:str) -> list[str]:
 @mcp.tool()
 def search_error_info_by_code(query: str) -> str:
     """
-    Search for error information in the document vector database using a query string.
+    Search for error information in the document vector database using a query string, especially when user query the tag `diagnose/error_code` value.
 
     This function uses a RAG (Retrieval-Augmented Generation) system to search through
-    indexed documents and retrieve relevant error information based on the provided query.
+    indexed documents and retrieve你 relevant error information based on the provided query.
 
     Args:
         query (str): The search query string, typically an error code or error-related text.
