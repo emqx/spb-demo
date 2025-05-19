@@ -38,9 +38,10 @@ class ToolExecResultEvent(Event):
 async def init_mcp_server():
     project_path = os.path.abspath(os.path.dirname(__file__))
     servers = [ 
-        {"command_or_url":f"uv", "args":["--directory", project_path, "run", f"biz_app.py"]},
+        #{"command_or_url":f"uv", "args":["--directory", project_path, "run", f"biz_app.py"]},
         #{"command_or_url":f"uv", "args":["--directory", project_path, "run", f"spb_server.py"]},
         {"command_or_url":"http://localhost:8081/sse", "args":[]},
+        {"command_or_url":"http://localhost:8082/sse", "args":[]},
     ]
     all_tools = []
     for server in servers:

@@ -36,6 +36,10 @@ Please refer to [software preparation](docs/software.md).
 ```bash
   uv run spb_server.py
 ```
+- Run biz mcp server
+```bash
+  uv run biz_app.py
+```
 - Run main application
 ```bash
   uv run main.py
