@@ -17,6 +17,26 @@ mcp = FastMCP()
 spb = SparkPlugBApp()
 
 @mcp.tool()
+async def get_spb_tree(device: str | None = None) -> str:
+    """Get SparkPlugB tree.
+
+    Args:
+        device: Device name. Option, If None, get spb tree for all devices.
+
+    Returns:
+        Tree format string, e.g.:
+        -- neuron
+        |  -- node
+        |    -- modbus
+        |      -- diagnose/tag1, 0
+        |      -- diagnose/tag2, 0
+        |      -- diagnose/error_code, 0
+    """
+    tree = spb.query_spb_tree(device)
+    logging.info(f"Tree: \n{tree}")
+    return tree
+
+@mcp.tool()
 async def get_current_time() -> str:
     """Get current timezone local time.
 
@@ -270,8 +290,10 @@ if __name__ == "__main__":
     starlette_app = create_starlette_app(mcp._mcp_server, debug=True)
     uvicorn.run(starlette_app, host="0.0.0.0", port=8081)
 
-    try:
-        while True:
-            time.sleep(1)
-    except:
-        signal_handler(None, None)
+    #try:
+        #while True:
+            #time.sleep(1)
+            #tree = spb.query_spb_tree()
+            #logging.info(tree)
+    #except:
+        #signal_handler(None, None)
