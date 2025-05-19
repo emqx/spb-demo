@@ -33,9 +33,10 @@ docker pull tdengine/tdengine:latest
 docker run -d -p 6030:6030 -p 6041:6041 -p 6043:6043 -p 6044-6049:6044-6049 -p 6044-6045:6044-6045/udp -p 6060:6060 tdengine/tdengine
 ```
 - Create database and table
-```
-main application will create the database and table automatically.
 
+Main application will create the database and table automatically.
+
+```sql
 CREATE TABLE IF NOT EXISTS devices (
     `ts` TIMESTAMP,
     `device` BINARY(128),

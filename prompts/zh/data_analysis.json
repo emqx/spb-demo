@@ -1,5 +1,5 @@
 {
-    "pre_analyze" : "用户输入的是: {ev.user_input}\n\n 根据你可以使用的工具，来确定数据降采样或聚合策略",
-    "extract_diagnose" : "返回数据: {ev.user_input}\n\n 请尝试在返回的内容中提取错误码，禁止输出报告",
+    "pre_analyze" : "用户输入的是: {ev.user_input}\n\n 根据你可以使用的工具，来确定数据降采样或聚合策略，并获取相关的数据",
+    "extract_diagnose" : "返回数据: {ev.result}\n\n 请尝试在返回数据中提取错误码,并利用相关的工具获取到详细的信息，如果返回信息不包含错误信息，则跳过此步骤",
     "gen_report" : "根据数据生成报告"
 }

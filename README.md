@@ -11,8 +11,8 @@ Follow the steps below to set up and run the application:
 
 1. Clone the Repository
 ```bash
-git clone https://github.com/emqx/spb_demo/
-cd spb_demo
+git clone https://github.com/emqx/spb-demo/
+cd spb-demo
 ```
 
 2. The project use `uv` to manage libs and project, please install [uv](https://docs.astral.sh/uv/getting-started/installation/) before getting start.

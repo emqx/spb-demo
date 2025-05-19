@@ -58,11 +58,49 @@ async def init_mcp_server():
         all_tools.extend(tools)
     return all_tools
 
+def get_rag() -> RAG:
+    rag = RAG()
+    try:
+        rag.load_index_from_hybrid_chunks()
+    except Exception as e:
+        rag.create_index_from_hybrid_chunks("./data/3HAC066553-010_20250426183500.md")
+    return rag
+
+rag = get_rag()
+
+def search_error_info_by_code(query: str) -> str:
+    """
+    Search for error information in the document vector database using a query string.
+
+    This function uses a RAG (Retrieval-Augmented Generation) system to search through
+    indexed documents and retrieve relevant error information based on the provided query.
+
+    Args:
+        query (str): The search query string, typically an error code or error-related text.
+        E,g: 10040, 10091 etc.
+
+    Returns:
+        str: The search response containing relevant error information found in the documents.
+
+    Logs:
+        - Logs the input query at INFO level
+        - Logs the search result at INFO level
+
+    Example:
+        >>> result = search_error_info_by_code("10042")
+        >>> print(result)
+        "10042 Axis synchronized Description
+        A fine calibration or update of revolution counter(s) was made...."
+    """
+    logging.info(f"Searching documents with query: {query}")
+    response = rag.query(query)
+    logging.info(f"Search result: {response}")
+    return str(response)
+
 class DemoFlow(Workflow):
     def __init__(
             self,
             llm: OpenAILike,
-            rag: RAG,
             memory: ChatMemoryBuffer = None,
             *args,
             **kwargs):
@@ -72,21 +110,9 @@ class DemoFlow(Workflow):
         self.memory = memory
         self.client = None
         self.llm = llm
-        self.rag = rag
-        #self.rag.create_index() # Create index for the first time
-        #try:
-            #self.rag.load_index()
-        #except Exception as e:
-            #self.rag.create_index() # Create index for the first time
-            
         super().__init__(*args, **kwargs)
     
-    def search_documents(self, query: str) -> str:
-        """Useful for answering natural language questions about an personal essay written by Paul Graham."""
-        logging.info(f"Searching documents with query: {query}")
-        response = self.rag.query(query)
-        logging.info(f"Search result: {response}")
-        return str(response)
+    
 
     @step
     async def process_input(self, ctx: Context, ev: StartEvent) -> Union[ RAGEvent | StopEvent]:
@@ -128,21 +154,20 @@ class DemoFlow(Workflow):
     @step
     async def process_rag(self, ctx: Context, ev: RAGEvent) -> ToolExecResultEvent:
         json_prompts = load_json_prompt("data_analysis.json", "zh")
-        user_prompt = f'{ev.result} \n\n {json_prompts["extract_diagnose"]}'
+        user_prompt = json_prompts["extract_diagnose"].format(ev=ev)
+        print(user_prompt)
         self.memory.put(ChatMessage(role=MessageRole.USER,content=user_prompt))
-        chat_history = self.memory.get()
 
+        flow = AgentWorkflow.from_tools_or_functions([search_error_info_by_code], llm=self.llm, system_prompt="")
         response = ""
-        handle = await self.llm.astream_chat(chat_history)
-        async for token in handle:
-            cprint(token.delta)
-            ctx.write_event_to_stream(ProgressEvent(msg=token.delta))
-            response += token.delta
+        handler = flow.run(user_msg=user_prompt)
+        async for event in handler.stream_events():
+            if isinstance(event, AgentStream):
+                response += event.delta
+                cprint(event.delta)
+            elif isinstance(event, ToolCallResult):
+                print(f'{event.tool_name}: {event.tool_kwargs}\n\n')
 
-        ctx.write_event_to_stream(ProgressEvent(msg="\n\n"))            
-        self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
-        response = self.search_documents(response)
-        cprint(response)
         self.memory.put(ChatMessage(role=MessageRole.ASSISTANT,content=response))
         return ToolExecResultEvent(result="")
 
@@ -159,38 +184,3 @@ class DemoFlow(Workflow):
             ctx.write_event_to_stream(ProgressEvent(msg=token.delta))
             response += token.delta
         return StopEvent(result=response)
-
-
-async def main():
-    try:
-        llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"),model=os.getenv("MODEL_NAME"),temperature=0.2,max_tokens=4000, timeout=180)
-        w = DemoFlow(timeout=None, llm=llm, verbose=True)
-        ctx = Context(w)
-
-        # user_prompt = '''分析过去一周设备 demo 的 diagnose/error_code 点位数据'''
-        user_prompt = '''分析过去一周设备 demo 的 robotic_arm/voltage 点位数据'''
-        device_info = '''要查询的设备是 ABB FlexPendant。ABB FlexPendant 是一款手持式触摸屏设备，用于编程和控制 ABB 工业机器人。它作为机器人控制器的用户界面，允许操作员执行多种操作，如更改和运行程序、教授机器人新的动作以及调整参数。
-          设备定义的点位如下所示，
-          ```json
-          {
-            "robotic_arm": { "voltage": 3.14, "amper": 5.0},
-            "diagnose": {"error_code": 50153}
-          }
-        其中 robotic_arm 分组中包含了 voltage 和 amper 数据；
-        其中 diagnose 分组中包含了 error_code 是设备上报的错误代码；
-          '''
-        handler = w.run(user_input=user_prompt, device_info=device_info, ctx=ctx)
-
-        async for ev in handler.stream_events():
-            if isinstance(ev, ProgressEvent):
-               cprint(ev.msg)
-        await handler
-    except Exception as e:
-        cprint(f"An error occurred: {str(e)}\n")
-        cprint("Full stack trace:\n")
-        cprint(traceback.format_exc())
-        raise
-
-if __name__ == "__main__":
-    import asyncio
-    asyncio.run(main())
