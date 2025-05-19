@@ -272,11 +272,3 @@ if __name__ == "__main__":
     
     starlette_app = create_starlette_app(mcp._mcp_server, debug=True)
     uvicorn.run(starlette_app, host="0.0.0.0", port=8081)
-
-    #try:
-        #while True:
-            #time.sleep(1)
-            #tree = spb.query_spb_tree()
-            #logging.info(tree)
-    #except:
-        #signal_handler(None, None)

@@ -1,14 +1,19 @@
 from dotenv import load_dotenv
+import signal
+
 
 from mcp.server.fastmcp import FastMCP
 from db.mariadb import Client
-import os
 import logging
+import os
 from db.rag import RAG
 
 load_dotenv()
 
-mcp = FastMCP("biz_app")
+project_path = os.path.abspath(os.path.dirname(__file__))
+logging.basicConfig(level=logging.INFO, filename=os.path.join(project_path, "logs/biz_server.log"), filemode="a", format="%(asctime)s - %(levelname)s - %(message)s")
+
+mcp = FastMCP()
 client = Client()
 
 def get_rag() -> RAG:
@@ -57,6 +62,47 @@ def search_error_info_by_code(query: str) -> str:
     logging.info(f"Search result: {response}")
     return str(response)
 
+from mcp.server import Server
+from starlette.requests import Request
+from starlette.applications import Starlette
+from mcp.server.sse import SseServerTransport
+from starlette.routing import Mount, Route
+
+def create_starlette_app(mcp_server: Server, *, debug: bool = False) -> Starlette:
+    """Create a Starlette application that can server the provied mcp server with SSE."""
+    sse = SseServerTransport("/messages/")
+
+    async def handle_sse(request: Request) -> None:
+        async with sse.connect_sse(
+                request.scope,
+                request.receive,
+                request._send,  # noqa: SLF001
+        ) as (read_stream, write_stream):
+            await mcp_server.run(
+                read_stream,
+                write_stream,
+                mcp_server.create_initialization_options(),
+            )
+
+    return Starlette(
+        debug=debug,
+        routes=[
+            Route("/sse", endpoint=handle_sse),
+            Mount("/messages/", app=sse.handle_post_message),
+        ],
+    )
+
 if __name__ == "__main__":
-    # Initialize and run the server
-    mcp.run(transport='stdio')
+    import uvicorn
+    
+    def signal_handler(sig, frame):
+        logging.info("Shutting down...")
+        logging.warning("biz app mcp server stopped")
+        exit(0)
+    
+    signal.signal(signal.SIGINT, signal_handler)
+    
+    logging.info("Starting biz app mcp server...")
+
+    starlette_app = create_starlette_app(mcp._mcp_server, debug=True)
+    uvicorn.run(starlette_app, host="0.0.0.0", port=8082)
