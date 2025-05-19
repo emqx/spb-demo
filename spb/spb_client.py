@@ -18,9 +18,27 @@ class SparkPlugBClient:
         self.client = None
         self.broker = os.getenv("MQTT_BROKER")
         self.port = int(os.getenv("MQTT_PORT", 1883))
+
         self.device_tag_alias = {}
         self.device_tags = {}
+
+        # tree
+        # -- {group}
+        # |  -- {node}
+        # |     -- {device}
+        # |       -- {metric}
+        self.groups = {}
     
+    def __parse_topic(self, topic: str) -> tuple[str, str, str]:
+        parts = topic.split('/')
+        if len(parts) < 5:
+            raise ValueError("Invalid topic format")
+        group = parts[1]
+        node = parts[3]
+        device = parts[4]
+        return group, node, device
+    
+    # spBv1.0/{group}/msg_type/{node}/{device}
     def __on_connect(self, client, userdata, flags, rc):
         result = self.client.subscribe('spBv1.0/#', qos=1)
         logging.info(f"Subscribed spBv1.0/#, result: {result}")
@@ -69,6 +87,12 @@ class SparkPlugBClient:
                 metrics = json_obj['metrics']
                 self.device_tag_alias[device] = {}
                 self.device_tags[device] = {}
+
+                (group, node, device) = self.__parse_topic(msg.topic)
+                self.groups[group] = self.groups.get(group, {})
+                self.groups[group][node] = self.groups[group].get(node, {})
+                self.groups[group][node][device] = self.groups[group][node].get(device, {})
+
                 for metric in metrics:
                     name = metric['name']
 
@@ -78,6 +102,7 @@ class SparkPlugBClient:
 
                     self.db.insert_tag(device, name, value, tag_time)
                     self.device_tags[device][name] = value
+                    self.groups[group][node][device][name] = value
                     if 'alias' in metric:
                         alias = metric['alias']
                         self.device_tag_alias[device][alias] = name 
@@ -116,6 +141,27 @@ class SparkPlugBClient:
         except Exception as e:
             logging.error(f"Failed to parse message: {e}")
             logging.debug(f"Raw message: {msg.payload}")
+    
+    def query_spb_tree(self, device: str | None = None) -> str:
+        tree = ""
+        if device:
+            if device in self.device_tags:
+                tree += f"-- {device}\n"
+                for tag, value in self.device_tags[device].items():
+                    tree += f"|  -- {tag}, {value}\n"
+            else:
+                logging.warning(f"Device {device} not found")
+                return "device not found" 
+        else:
+            for group, nodes in self.groups.items():
+                tree += f"-- {group}\n"
+                for node, devices in nodes.items():
+                    tree += f"|  -- {node}\n"
+                    for device, tags in devices.items():
+                        tree += f"|    -- {device}\n"
+                        for tag, value in tags.items():
+                            tree += f"|      -- {tag}, {value}\n"
+        return tree
     
     def query_device_current_tag_value(self, device: str, tag: str) -> str:
         if device in self.device_tags:

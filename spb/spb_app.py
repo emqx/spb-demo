@@ -24,6 +24,9 @@ class SparkPlugBApp:
                 "time": self.timestamp_to_str(result['ts'])
             })
         return status
+    
+    def query_spb_tree(self, device: str | None = None) -> str:
+        return self.client.query_spb_tree(device);
 
     def query_device_current_tag_value(self, device: str, tag: str) -> str:
         return self.client.query_device_current_tag_value(device, tag)

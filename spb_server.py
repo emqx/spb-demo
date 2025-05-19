@@ -17,6 +17,26 @@ mcp = FastMCP()
 spb = SparkPlugBApp()
 
 @mcp.tool()
+async def get_spb_tree(device: str | None = None) -> str:
+    """Get SparkPlugB tree.
+
+    Args:
+        device: Device name. Option, If None, get spb tree for all devices.
+
+    Returns:
+        Tree format string, e.g.:
+        -- neuron
+        |  -- node
+        |    -- modbus
+        |      -- diagnose/tag1, 0
+        |      -- diagnose/tag2, 0
+        |      -- diagnose/error_code, 0
+    """
+    tree = spb.query_spb_tree(device)
+    logging.info(f"Tree: \n{tree}")
+    return tree
+
+@mcp.tool()
 async def get_current_time() -> str:
     """Get current timezone local time.
 
@@ -63,13 +83,12 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
 
     If query with time range, time format is YYYY-MM-DD HH:MM:SS+0800, should include timezone, e.g. 2023-10-01 00:00:00+0800; Do not use like Now() or current_timestamp() in sql, because the time zone is different;          
     
-    Use `date_bin(INTERVAL, expression[, origin-timestamp])` to leverage time windows to decrease the number of returned records. The date_bin function truncates the expression based on the input interval time unit. 
-    It allows specifying an origin-timestamp as the starting point, which defaults to the UNIX epoch (1970-01-01 00:00:00 UTC) if not provided. 
-    For example: date_bin('interval 1 hour', ts) aligns timestamps into 1-hour bins starting from the origin. 
-    INTERVAL is string such as, '2 hour', the available time units: 'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
+    Use `INTERVAL(interval_val)` to leverage time windows to decrease the number of returned records. The INTERVAL function truncates the expression based on the input interval time unit. 
+    INTERVAL need to be used with aggregate functions like COUNT, SUM, AVG, MIN, MAX, etc.
+    For example: INTERVAL(1h) aligns timestamps into 1-hour bins starting from the origin. 
+    interval_val is string such as, '2h', the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
     For exmaple, with below SQL, it queries the tag_values table and calculates average tag_value as returned tag_value in 1 hour, so reduced the number of record to 1 for every 1 hour.
-    `SELECT date_bin('3 minute', ts) AS timepoint, tag_value FROM tag_values WHERE where_expression GROUP BY timepoint, tag_value ORDER BY timepoint;`
-    `SELECT date_bin('1 hour', ts) AS timepoint, avg(CAST(tag_value AS FLOAT)) AS value FROM tag_values WHERE where_expression GROUP BY timepoint ORDER BY timepoint;`
+    `SELECT avg(CAST(tag_value AS FLOAT)) AS value FROM tag_values WHERE where_expression INTERVAL(3m);`
     '''
     
     logging.info(f"Getting get_device_tag_value_aggregate_time_window_by_sql by sql {sql}")
@@ -197,13 +216,12 @@ async def get_device_status_by_sql(sql: str) -> str:
             e.g. query modbus device status: SELECT * FROM devices WHERE device = 'modbus';
             e.g. query specific device latest status: SELECT * FROM devices WHERE device = 'device_name' ORDER BY ts DESC LIMIT 1;
 
-            Use `date_bin(INTERVAL, expression[, origin-timestamp])` to leverage time windows to decrease the number of returned records. The date_bin function truncates the expression based on the input interval time unit. 
-            It allows specifying an origin-timestamp as the starting point, which defaults to the UNIX epoch (1970-01-01 00:00:00 UTC) if not provided. 
-            For example: date_bin('interval 1 hour', ts) aligns timestamps into 1-hour bins starting from the origin. 
-            INTERVAL is string similar to '2 hour', the available time units: 'nanosecond', 'microsecond', 'millisecond', 'second', 'minute, 'hour', 'day', 'week', 'month', 'year'
-            For exmaple, with below SQL, it queries the device table and calculates the aggregated value.
-            To get aggregated online status: `SELECT date_bin('1 hour', ts) AS timepoint, count(*) AS status FROM devices WHERE status="online" GROUP BY timepoint ORDER BY timepoint;`
-            To get aggregated offline status: `SELECT date_bin('1 hour', ts) AS timepoint, count(*) AS status FROM devices WHERE status="offline" GROUP BY timepoint ORDER BY timepoint;`
+            Use `INTERVAL(interval_val)` to leverage time windows to decrease the number of returned records. The INTERVAL function truncates the expression based on the input interval time unit. 
+            INTERVAL need to be used with aggregate functions like COUNT, SUM, AVG, MIN, MAX, etc.
+            For example: INTERVAL(1h) aligns timestamps into 1-hour bins starting from the origin. 
+            interval_val is string such as, '2h', the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
+            For exmaple, with below SQL, it queries the tag_values table and calculates average tag_value as returned tag_value in 1 hour, so reduced the number of record to 1 for every 1 hour.
+            `SELECT avg(CAST(tag_value AS FLOAT)) AS value FROM tag_values WHERE where_expression INTERVAL(3m);`
     """
     logging.info(f"Getting device status by sql: {sql}")
     results  = spb.db_execute_sql(sql)
@@ -270,8 +288,10 @@ if __name__ == "__main__":
     starlette_app = create_starlette_app(mcp._mcp_server, debug=True)
     uvicorn.run(starlette_app, host="0.0.0.0", port=8081)
 
-    try:
-        while True:
-            time.sleep(1)
-    except:
-        signal_handler(None, None)
+    #try:
+        #while True:
+            #time.sleep(1)
+            #tree = spb.query_spb_tree()
+            #logging.info(tree)
+    #except:
+        #signal_handler(None, None)
