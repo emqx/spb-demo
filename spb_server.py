@@ -88,7 +88,7 @@ async def get_device_tag_value_aggregate_time_window_by_sql(sql) -> str:
     For example: INTERVAL(1h) aligns timestamps into 1-hour bins starting from the origin. 
     interval_val is string such as, '2h', the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
     For exmaple, with below SQL, it queries the tag_values table and calculates average tag_value as returned tag_value in 1 hour, so reduced the number of record to 1 for every 1 hour.
-    `SELECT avg(CAST(tag_value AS FLOAT)) AS value FROM tag_values WHERE where_expression INTERVAL(3m);`
+    `SELECT avg(CAST(tag_value AS FLOAT)) AS t_value FROM tag_values WHERE where_expression INTERVAL(3m);`
     '''
     
     logging.info(f"Getting get_device_tag_value_aggregate_time_window_by_sql by sql {sql}")
@@ -221,7 +221,7 @@ async def get_device_status_by_sql(sql: str) -> str:
             For example: INTERVAL(1h) aligns timestamps into 1-hour bins starting from the origin. 
             interval_val is string such as, '2h', the available time units: 'b: nanosecond', 'u: microsecond', 'a: millisecond', 's: second', 'm: minute, 'h: hour', 'd: day', 'w: week', 'n: month', 'y: year'
             For exmaple, with below SQL, it queries the tag_values table and calculates average tag_value as returned tag_value in 1 hour, so reduced the number of record to 1 for every 1 hour.
-            `SELECT avg(CAST(tag_value AS FLOAT)) AS value FROM tag_values WHERE where_expression INTERVAL(3m);`
+            `SELECT avg(CAST(tag_value AS FLOAT)) AS t_value FROM tag_values WHERE where_expression INTERVAL(3m);`
     """
     logging.info(f"Getting device status by sql: {sql}")
     results  = spb.db_execute_sql(sql)
