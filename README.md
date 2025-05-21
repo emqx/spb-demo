@@ -48,4 +48,6 @@ Please refer to [software preparation](docs/software.md).
 - Type questions in the chatbox.
 
 ## Demos
-Refer to [doc](docs/demo_scenario.md) for more detailed information.
+Refer to [doc](docs/demo_scenario.md) for detailed demo scenarios.
+
+![](docs/ui_1.png)
