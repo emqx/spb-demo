@@ -59,6 +59,7 @@ class DemoFlow(Workflow):
     def __init__(
             self,
             llm: OpenAILike,
+            lang: str = "zh",
             memory: ChatMemoryBuffer = None,
             *args,
             **kwargs):
@@ -66,6 +67,7 @@ class DemoFlow(Workflow):
         if memory is None:
             memory = ChatMemoryBuffer(token_limit=64000)
         self.memory = memory
+        self.lang = lang
         self.client = None
         self.llm = llm
         super().__init__(*args, **kwargs)
@@ -77,7 +79,7 @@ class DemoFlow(Workflow):
         # # Add event showing available tools
         ctx.write_event_to_stream(ProgressEvent(msg=f"Available tools: {tools_name}\n\n"))
 
-        system_prompt=load_system_prompt(prompt_filename="system.txt", lang="zh").format(ev=ev)
+        system_prompt=load_system_prompt(prompt_filename="system.txt", lang=self.lang).format(ev=ev)
         self.memory.put(ChatMessage(role=MessageRole.SYSTEM,content=system_prompt))
 
         query_info = AgentWorkflow.from_tools_or_functions(
@@ -88,7 +90,7 @@ class DemoFlow(Workflow):
             timeout=180,
             )
         
-        json_prompts = load_json_prompt("data_analysis.json", "zh")
+        json_prompts = load_json_prompt("data_analysis.json", self.lang)
         user_prompt = json_prompts["pre_analyze"].format(ev=ev)
         await ctx.set("user_input", ev.user_input)
         self.memory.put(ChatMessage(role=MessageRole.USER,content=user_prompt))
@@ -111,7 +113,7 @@ class DemoFlow(Workflow):
     @step
     async def gen_report(self, ctx: Context, ev: ToolExecResultEvent) -> StopEvent:
         ev.user_input = await ctx.get("user_input")
-        user_prompt = load_json_prompt("data_analysis.json", "zh")["gen_report"].format(ev=ev)
+        user_prompt = load_json_prompt("data_analysis.json", self.lang)["gen_report"].format(ev=ev)
         self.memory.put(ChatMessage(role=MessageRole.USER, content=user_prompt))
         chat_history = self.memory.get()
 

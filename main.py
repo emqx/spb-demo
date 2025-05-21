@@ -33,7 +33,7 @@ async def root():
 llm = SiliconFlow(api_key=os.getenv("SFAPI_KEY"), model=str(os.getenv("MODEL_NAME")), temperature=0.6, max_tokens=4000, timeout=180)
 # llm = DeepSeek(model=os.getenv("DS_MODEL_NAME"), api_key=os.getenv("DS_API_KEY"),temperature=0.6,max_tokens=6000)
 
-async def event_generator(prompt: str, session_id: str):
+async def event_generator(prompt: str, session_id: str, language: str):
     # Get existing memory or create new one
     memory = session_store.get_memory(session_id)
     if memory is not None:
@@ -51,7 +51,7 @@ async def event_generator(prompt: str, session_id: str):
         其中 diagnose 分组中包含了 error_code 是设备上报的错误代码；
           '''
     # Initialize the LLM and workflow
-    workflow = DemoFlow(timeout=None, llm=llm, verbose=True, memory=memory)
+    workflow = DemoFlow(timeout=None, llm=llm, verbose=True, memory=memory, lang=language)
     ctx = Context(workflow)
 
     # Run the workflow
@@ -86,8 +86,11 @@ async def stream_llm_response(request: Request):
     if not session_id:
         session_id = str(uuid.uuid4())
     
+    # Get language preference from header, default to 'zh' if not present
+    language = request.headers.get("X-Language", "zh")
+    
     return EventSourceResponse(
-        event_generator(user_prompt, session_id),
+        event_generator(user_prompt, session_id, language),
         media_type="text/event-stream"
     )
 

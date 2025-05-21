@@ -1,0 +1,4 @@
+{
+    "pre_analyze": "User input is: {ev.user_input}\n\nBased on the tools available, determine data downsampling or aggregation strategy and retrieve relevant data",
+    "gen_report": "User input is: {ev.user_input}\n\nGenerate report based on the data"
+}

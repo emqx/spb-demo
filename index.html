@@ -254,6 +254,26 @@
             background-color: var(--primary-color);
             color: white;
         }
+
+        .language-selector {
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        .language-selector label {
+            margin: 0 10px;
+            cursor: pointer;
+            color: #64748b;
+        }
+
+        .language-selector input[type="radio"] {
+            margin-right: 5px;
+        }
+
+        .language-selector input[type="radio"]:checked + span {
+            color: var(--primary-color);
+            font-weight: 500;
+        }
     </style>
 </head>
 
@@ -294,6 +314,16 @@
                 <div class="loading" style="display: none;">
                     <div class="loading-spinner"></div>
                 </div>
+            </div>
+            <div class="language-selector">
+                <label>
+                    <input type="radio" name="language" value="en">
+                    <span>English</span>
+                </label>
+                <label>
+                    <input type="radio" name="language" value="zh" checked>
+                    <span>中文</span>
+                </label>
             </div>
         </div>
     </div>
@@ -357,6 +387,18 @@
             chatMessages.scrollTop = chatMessages.scrollHeight;
         }
 
+        // Add language selection handling
+        const languageRadios = document.querySelectorAll('input[name="language"]');
+        let currentLanguage = 'zh'; // Default to Chinese
+
+        languageRadios.forEach(radio => {
+            radio.addEventListener('change', (e) => {
+                currentLanguage = e.target.value;
+                // You can add additional language-specific logic here
+            });
+        });
+
+        // Modify submitQuery to include language
         async function submitQuery() {
             const prompt = promptInput.value.trim();
             if (!prompt) return;
@@ -376,7 +418,8 @@
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-Tab-Session': tabSessionId  // Add tab session ID in header
+                        'X-Tab-Session': tabSessionId,
+                        'X-Language': currentLanguage  // Add language header
                     },
                     body: JSON.stringify({ prompt }),
                 });

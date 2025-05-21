@@ -55,7 +55,7 @@ Create a table in MariaDB to store the OT & IT mapping. For example, we have a t
 CREATE DATABASE demo;
 USE demo;
 CREATE TABLE ot_it_mapping (
-    ot_id VARCHAR(50) PRIMARY KEY,
+    ot_id VARCHAR(50),
     it_alias VARCHAR(100) NOT NULL
 );
 
@@ -64,4 +64,5 @@ INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('factory_1', 'LA factory');
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('assembly_1', 'Big boy');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('test', 'Bee');  
 INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('demo', '擎天柱');  
+INSERT INTO ot_it_mapping (ot_id, it_alias) VALUES ('demo', 'Optimus Prime');  
 ```
