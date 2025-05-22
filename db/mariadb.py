@@ -18,6 +18,7 @@ import logging
 class Client:
     def __init__(self):
         self.host = os.getenv("MARIADB_HOST", "localhost")
+        self.port = os.getenv("MARIADB_PORT", 3306)
         self.user = os.getenv("MARIADB_USER", "root")
         self.password = os.getenv("MARIADB_PASSWORD", "public")
         self.connection = None
@@ -26,6 +27,7 @@ class Client:
         try:
             connection = mysql.connector.connect(
                 host=self.host,
+                port=self.port,
                 database='demo',
                 user=self.user,
                 password=self.password,
