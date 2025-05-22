@@ -187,3 +187,4 @@ wheels/
 logs/*.log
 storage/*.json
 storage/*.lock
+nohup.out
