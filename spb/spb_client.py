@@ -18,6 +18,8 @@ class SparkPlugBClient:
         self.client = None
         self.broker = os.getenv("MQTT_BROKER")
         self.port = int(os.getenv("MQTT_PORT", 1883))
+        self.username = os.getenv("MQTT_USERNAME")
+        self.password = os.getenv("MQTT_PASSWORD")
 
         self.device_tag_alias = {}
         self.device_tags = {}
@@ -186,6 +188,8 @@ class SparkPlugBClient:
         self.client.on_connect = self.__on_connect
         self.client.on_message = self.__on_message
         try:
+            if self.username and self.password:
+                self.client.username_pw_set(self.username, self.password)
             self.client.connect(self.broker, self.port, 60)
             self.client.loop_start()
             logging.info(f"Connected to MQTT broker at {self.broker}:{self.port}")
