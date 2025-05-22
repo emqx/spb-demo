@@ -97,4 +97,5 @@ async def stream_llm_response(request: Request):
 if __name__ == "__main__":
     import uvicorn
 
+    logging.info("Starting FastAPI server...")
     uvicorn.run(app, host="0.0.0.0", port=8000)

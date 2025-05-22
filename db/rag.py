@@ -31,12 +31,12 @@ class RAG:
         if local_embedding:
             Settings.embed_model = HuggingFaceEmbedding(model_name="BAAI/bge-base-en-v1.5",)
             self.__dimension = 768
-            self.__store_uri = "./storage/zh_local.db"
+            self.__store_uri = "./storage/en_local.db"
             logging.info("Using local embedding model: BAAI/bge-base-en-v1.5")
         else:
             Settings.embed_model = AliEmbeddings(key=os.getenv("EMBEDDING_API_KEY"), base_url=os.getenv("EMBEDDING_API_BASE_URL"), model_name=os.getenv("EMBEDDING_MODEL_NAME"))
             self.__dimension = 1024
-            self.__store_uri = "./storage/zh_ali.db"
+            self.__store_uri = "./storage/en_ali.db"
             logging.info("Using Ali embedding model")
 
         self.index = None
